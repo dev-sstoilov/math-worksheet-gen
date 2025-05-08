@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Генератор на Уравнения</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .input-group {
+            margin: 10px 0;
+        }
+
+        label {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #45a049;
+            }
+    </style>
+</head>
+<body>
+    <h1>Генератор на Уравнения</h1>
+
+    <div class="input-group">
+        <label>От: <input type="number" id="minNum" value="0" min="0"></label>
+        <label>До: <input type="number" id="maxNum" value="20" min="1"></label>
+    </div>
+
+    <div class="input-group">
+        <label><input type="checkbox" id="addition" checked> Събиране</label>
+        <label><input type="checkbox" id="subtraction" checked> Изваждане</label>
+        <label><input type="checkbox" id="multiplication"> Умножение</label>
+        <label><input type="checkbox" id="division"> Деление</label>
+    </div>
+
+    <button onclick="generateDocument()">Генерирай DOC</button>
+
+    <script>
+        function numberToBulgarian(num) {
+            if (num === 0) return 'нула';
+            const units = ['', 'едно', 'две', 'три', 'четири', 'пет', 'шест', 'седем', 'осем', 'девет'];
+            const teens = ['десет', 'единадесет', 'дванадесет', 'тринадесет', 'четиринадесет',
+                'петнадесет', 'шестнадесет', 'седемнадесет', 'осемнадесет', 'деветнадесет'];
+            const tens = ['', '', 'двадесет', 'тридесет', 'четиридесет', 'петдесет',
+                'шестдесет', 'седемдесет', 'осемдесет', 'деветдесет'];
+
+            if (num < 10) return units[num];
+            if (num >= 10 && num < 20) return teens[num - 10];
+
+            const ten = Math.floor(num / 10);
+            const unit = num % 10;
+            return tens[ten] + (unit > 0 ? ' и ' + units[unit] : '');
+        }
+
+        function generateDocument() {
+            const min = parseInt(document.getElementById('minNum').value);
+            const max = parseInt(document.getElementById('maxNum').value);
+            const operations = [];
+            const operationMap = {
+                addition: 'плюс',
+                subtraction: 'минус',
+                multiplication: 'умножено по',
+                division: 'разделено на'
+            };
+
+            if (document.getElementById('addition').checked) operations.push('addition');
+            if (document.getElementById('subtraction').checked) operations.push('subtraction');
+            if (document.getElementById('multiplication').checked) operations.push('multiplication');
+            if (document.getElementById('division').checked) operations.push('division');
+
+            if (operations.length === 0) return alert('Изберете поне една операция!');
+            if (min >= max) return alert('Максималната стойност трябва да е по-голяма от минималната!');
+
+            let equations = [];
+            for (let i = 0; i < 30; i++) {
+                const operation = operations[Math.floor(Math.random() * operations.length)];
+                let a, b;
+
+                if (operation === 'subtraction') {
+                    a = Math.floor(Math.random() * (max - min + 1)) + min;
+                    b = Math.floor(Math.random() * (a - min + 1)) + min;
+                }
+                else if (operation === 'division') {
+                    do { b = Math.floor(Math.random() * (max - min + 1)) + min; } while (b === 0);
+                    const maxMultiple = Math.floor(max / b);
+                    a = b * (Math.floor(Math.random() * maxMultiple) + 1);
+                    if (a < min) a = b;
+                }
+                else {
+                    a = Math.floor(Math.random() * (max - min + 1)) + min;
+                    b = Math.floor(Math.random() * (max - min + 1)) + min;
+                }
+
+                const equation = `${numberToBulgarian(a)} ${operationMap[operation]} ${numberToBulgarian(b)} е равно на: (     )`;
+                equations.push(equation);
+            }
+
+            const htmlContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<title>Уравнения</title>
+<style>
+td {
+        font-size: 16pt;
+        font-family: Arial;
+        padding: 15px 0;
+        line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<table>
+${equations.map(eq => `<tr><td>${eq}</td></tr>`).join('')}
+</table>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'bulgarian_equations.doc';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
