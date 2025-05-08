@@ -24,9 +24,15 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #45a049;
+        }
+        input[type="number"], select {
+            padding: 5px;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -35,7 +41,7 @@
     
     <div class="input-group">
         <label>Диапазон на отговорите:<br>
-            От: <input type="number" id="answerMin" value="0" min="0">
+            От: <input type="number" id="answerMin" value="1" min="0">
             До: <input type="number" id="answerMax" value="20" min="1">
         </label>
     </div>
@@ -85,103 +91,139 @@
         }
 
         function createDocContent(content, title) {
-            return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><title>${title}</title>
-<style>td {font-size: 16pt; font-family: Arial; padding: 15px 0; line-height: 1.5;}</style>
-</head><body><table>${content.map(line => `<tr><td>${line}</td></tr>`).join('')}</table></body></html>`;
+            return `<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>${title}</title>
+<style>
+body { font-family: Arial; font-size: 16pt; }
+p { margin: 15px 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+${content.map(line => `<p>${line}</p>`).join('')}
+</body>
+</html>`;
         }
 
         function generateDocuments() {
-            const answerMin = parseInt(document.getElementById('answerMin').value);
-            const answerMax = parseInt(document.getElementById('answerMax').value);
-            const equationMax = parseInt(document.getElementById('equationMax').value);
-            const numEquations = parseInt(document.getElementById('numEquations').value);
-            const operations = [];
-            const operationMap = {
-                addition: 'плюс',
-                subtraction: 'минус',
-                multiplication: 'умножено по',
-                division: 'разделено на'
-            };
+            try {
+                const answerMin = parseInt(document.getElementById('answerMin').value);
+                const answerMax = parseInt(document.getElementById('answerMax').value);
+                const equationMax = parseInt(document.getElementById('equationMax').value);
+                const numEquations = parseInt(document.getElementById('numEquations').value);
+                const operations = [];
+                const operationMap = {
+                    addition: 'плюс',
+                    subtraction: 'минус',
+                    multiplication: 'умножено по',
+                    division: 'разделено на'
+                };
 
-            if (document.getElementById('addition').checked) operations.push('addition');
-            if (document.getElementById('subtraction').checked) operations.push('subtraction');
-            if (document.getElementById('multiplication').checked) operations.push('multiplication');
-            if (document.getElementById('division').checked) operations.push('division');
+                if (document.getElementById('addition').checked) operations.push('addition');
+                if (document.getElementById('subtraction').checked) operations.push('subtraction');
+                if (document.getElementById('multiplication').checked) operations.push('multiplication');
+                if (document.getElementById('division').checked) operations.push('division');
 
-            if (operations.length === 0) return alert('Изберете поне една операция!');
-            if (answerMin >= answerMax) return alert('Максималната стойност на отговорите трябва да е по-голяма от минималната!');
-            if (equationMax < answerMax) return alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
+                if (operations.length === 0) {
+                    alert('Изберете поне една операция!');
+                    return;
+                }
+                if (answerMin >= answerMax) {
+                    alert('Максималната стойност на отговорите трябва да е по-голяма от минималната!');
+                    return;
+                }
+                if (equationMax < answerMax) {
+                    alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
+                    return;
+                }
 
-            let problems = [];
-            for (let i = 0; i < numEquations; i++) {
-                const operation = operations[Math.floor(Math.random() * operations.length)];
-                let a, b, result;
+                let problems = [];
+                let attempts = 0;
+                const maxAttempts = numEquations * 2; // Prevent infinite loops
 
-                // Generate result first within answer range
-                result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
+                while (problems.length < numEquations && attempts < maxAttempts) {
+                    attempts++;
+                    const operation = operations[Math.floor(Math.random() * operations.length)];
+                    let a, b, result;
 
-                if (operation === 'addition') {
-                    a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
-                    b = result - a;
-                    while(b < 1 || b > equationMax) {
+                    // Generate result first within answer range
+                    result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
+
+                    if (operation === 'addition') {
                         a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
                         b = result - a;
-                    }
-                } 
-                else if (operation === 'subtraction') {
-                    b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
-                    a = result + b;
-                    while(a > equationMax) {
-                        b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
+                        if (b < 1 || b > equationMax) continue;
+                    } 
+                    else if (operation === 'subtraction') {
+                        b = Math.floor(Math.random() * (Math.min(equationMax, result + equationMax) - 1 + 1)) + 1;
                         a = result + b;
+                        if (a > equationMax) continue;
                     }
-                }
-                else if (operation === 'multiplication') {
-                    const factors = [];
-                    for(let x = 1; x <= equationMax; x++) {
-                        if(result % x === 0 && (result / x) <= equationMax) {
-                            factors.push(x);
+                    else if (operation === 'multiplication') {
+                        const factors = [];
+                        for(let x = 1; x <= equationMax; x++) {
+                            if(result % x === 0 && (result / x) <= equationMax) {
+                                factors.push(x);
+                            }
                         }
+                        if(factors.length === 0) continue;
+                        a = factors[Math.floor(Math.random() * factors.length)];
+                        b = result / a;
                     }
-                    if(factors.length === 0) continue;
-                    a = factors[Math.floor(Math.random() * factors.length)];
-                    b = result / a;
-                }
-                else if (operation === 'division') {
-                    b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
-                    a = result * b;
-                    while(a > equationMax) {
+                    else if (operation === 'division') {
                         b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
                         a = result * b;
+                        if (a > equationMax) continue;
+                    }
+
+                    const aWord = numberToBulgarian(a);
+                    const bWord = numberToBulgarian(b);
+                    
+                    const question = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (     )`;
+                    const answer = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (${result})`;
+                    
+                    problems.push({ question, answer });
+                }
+
+                if (problems.length < numEquations) {
+                    alert(`Генерирахме само ${problems.length} от ${numEquations} уравнения поради ограничения. Моля, разширете диапазоните.`);
+                }
+
+                // Create documents
+                const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
+                const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
+
+                function download(content, filename) {
+                    try {
+                        const blob = new Blob([content], { type: 'application/msword' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        
+                        link.onclick = () => {
+                            setTimeout(() => {
+                                URL.revokeObjectURL(url);
+                                link.remove();
+                            }, 100);
+                        };
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                    } catch (e) {
+                        alert('Грешка при изтегляне: ' + e.message);
                     }
                 }
 
-                const aWord = numberToBulgarian(a);
-                const bWord = numberToBulgarian(b);
+                download(exerciseContent, 'bulgarian_equations.doc');
+                setTimeout(() => download(answerContent, 'bulgarian_answers.doc'), 500);
                 
-                const question = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (     )`;
-                const answer = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (${result})`;
-                
-                problems.push({ question, answer });
+            } catch (error) {
+                alert('Възникна грешка: ' + error.message);
+                console.error(error);
             }
-
-            // Create documents
-            const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
-            const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
-
-            function download(content, filename) {
-                const blob = new Blob([content], { type: 'application/msword' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-
-            download(exerciseContent, 'bulgarian_equations.doc');
-            setTimeout(() => download(answerContent, 'bulgarian_answers.doc'), 100);
         }
     </script>
 </body>
