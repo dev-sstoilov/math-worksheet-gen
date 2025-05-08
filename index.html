@@ -34,8 +34,28 @@
     <h1>Генератор на Уравнения</h1>
     
     <div class="input-group">
-        <label>От: <input type="number" id="minNum" value="0" min="0"></label>
-        <label>До: <input type="number" id="maxNum" value="20" min="1"></label>
+        <label>Диапазон на отговорите:<br>
+            От: <input type="number" id="answerMin" value="0" min="0">
+            До: <input type="number" id="answerMax" value="20" min="1">
+        </label>
+    </div>
+    
+    <div class="input-group">
+        <label>Максимално число в уравненията:
+            <input type="number" id="equationMax" value="30" min="1">
+        </label>
+    </div>
+    
+    <div class="input-group">
+        <label>Брой уравнения:
+            <select id="numEquations">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30" selected>30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
+        </label>
     </div>
     
     <div class="input-group">
@@ -72,8 +92,10 @@
         }
 
         function generateDocuments() {
-            const min = parseInt(document.getElementById('minNum').value);
-            const max = parseInt(document.getElementById('maxNum').value);
+            const answerMin = parseInt(document.getElementById('answerMin').value);
+            const answerMax = parseInt(document.getElementById('answerMax').value);
+            const equationMax = parseInt(document.getElementById('equationMax').value);
+            const numEquations = parseInt(document.getElementById('numEquations').value);
             const operations = [];
             const operationMap = {
                 addition: 'плюс',
@@ -88,51 +110,65 @@
             if (document.getElementById('division').checked) operations.push('division');
 
             if (operations.length === 0) return alert('Изберете поне една операция!');
-            if (min >= max) return alert('Максималната стойност трябва да е по-голяма от минималната!');
+            if (answerMin >= answerMax) return alert('Максималната стойност на отговорите трябва да е по-голяма от минималната!');
+            if (equationMax < answerMax) return alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
 
             let problems = [];
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < numEquations; i++) {
                 const operation = operations[Math.floor(Math.random() * operations.length)];
                 let a, b, result;
 
-                if (operation === 'subtraction') {
-                    a = Math.floor(Math.random() * (max - min + 1)) + min;
-                    b = Math.floor(Math.random() * (a - min + 1)) + min;
-                    result = a - b;
+                // Generate result first within answer range
+                result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
+
+                if (operation === 'addition') {
+                    a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
+                    b = result - a;
+                    while(b < 1 || b > equationMax) {
+                        a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
+                        b = result - a;
+                    }
                 } 
+                else if (operation === 'subtraction') {
+                    b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
+                    a = result + b;
+                    while(a > equationMax) {
+                        b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
+                        a = result + b;
+                    }
+                }
+                else if (operation === 'multiplication') {
+                    const factors = [];
+                    for(let x = 1; x <= equationMax; x++) {
+                        if(result % x === 0 && (result / x) <= equationMax) {
+                            factors.push(x);
+                        }
+                    }
+                    if(factors.length === 0) continue;
+                    a = factors[Math.floor(Math.random() * factors.length)];
+                    b = result / a;
+                }
                 else if (operation === 'division') {
-                    do { b = Math.floor(Math.random() * (max - min + 1)) + min; } while (b === 0);
-                    const maxMultiple = Math.floor(max / b);
-                    a = b * (Math.floor(Math.random() * maxMultiple) + 1);
-                    if (a < min) a = b;
-                    result = a / b;
-                } 
-                else {
-                    a = Math.floor(Math.random() * (max - min + 1)) + min;
-                    b = Math.floor(Math.random() * (max - min + 1)) + min;
-                    result = operation === 'addition' ? a + b : a * b;
+                    b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
+                    a = result * b;
+                    while(a > equationMax) {
+                        b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
+                        a = result * b;
+                    }
                 }
 
                 const aWord = numberToBulgarian(a);
                 const bWord = numberToBulgarian(b);
                 
                 const question = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (     )`;
-                const answer = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (${result})`; // Changed to numeric result
+                const answer = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (${result})`;
                 
                 problems.push({ question, answer });
             }
 
-            // Create exercise document
-            const exerciseContent = createDocContent(
-                problems.map(p => p.question),
-                "Упражнения"
-            );
-            
-            // Create answer key document
-            const answerContent = createDocContent(
-                problems.map(p => p.answer),
-                "Отговори"
-            );
+            // Create documents
+            const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
+            const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
 
             function download(content, filename) {
                 const blob = new Blob([content], { type: 'application/msword' });
