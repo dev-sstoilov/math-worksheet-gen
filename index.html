@@ -87,13 +87,18 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             background: var(--secondary-color);
             color: white;
             border: none;
             cursor: help;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
         }
 
         .modal {
@@ -106,14 +111,16 @@
             background: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
 
         .modal-content {
             background: white;
             padding: 25px;
             border-radius: 10px;
-            max-width: 500px;
             position: relative;
+            max-width: 500px;
+            width: 90%;
         }
 
         .close-btn {
@@ -121,6 +128,7 @@
             top: 10px;
             right: 10px;
             cursor: pointer;
+            font-size: 24px;
         }
 
         .toggle-group {
@@ -174,6 +182,27 @@
         input:checked + .slider:before {
             transform: translateX(26px);
         }
+
+        .download-btns {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .download-btn {
+            padding: 12px 25px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -193,6 +222,15 @@
                 </label>
                 <span>Числа</span>
             </div>
+        </div>
+
+        <div class="input-group">
+            <label>Настройки за пренасяне:</label>
+            <select id="regroupingToggle">
+                <option value="none">Без пренасяне</option>
+                <option value="only">Само с пренасяне</option>
+                <option value="mixed">Смесени</option>
+            </select>
         </div>
 
         <div class="input-group">
@@ -234,6 +272,11 @@
             <span class="close-btn" onclick="hideHelp()">&times;</span>
             <h3>Помощ за Генератора</h3>
             <p><strong>Формат на числата:</strong> Изберете дали уравненията да използват числа или думи</p>
+            <p><strong>Пренасяне:</strong> 
+                - Без: Никога не изисква пренасяне/заемане<br>
+                - Само: Винаги изисква пренасяне/заемане<br>
+                - Смесени: Случайна комбинация
+            </p>
             <p><strong>Диапазон на отговорите:</strong> Определете минималната и максималната стойност на верните отговори</p>
             <p><strong>Макс. число в уравненията:</strong> Най-голямото число, което може да се появи в задачите</p>
             <p><strong>Брой уравнения:</strong> Общият брой задачи за генериране</p>
@@ -241,8 +284,20 @@
         </div>
     </div>
 
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <h3>Документите са готови за изтегляне</h3>
+            <div class="download-btns">
+                <button class="download-btn" id="downloadExercise">Упражнения</button>
+                <button class="download-btn" id="downloadAnswer">Отговори</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Help Modal Functions
+        let exerciseBlob = null;
+        let answerBlob = null;
+
         function showHelp() {
             document.getElementById('helpModal').style.display = 'flex';
         }
@@ -251,7 +306,18 @@
             document.getElementById('helpModal').style.display = 'none';
         }
 
-        // Number to Bulgarian Words Conversion
+        function showDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'flex';
+        }
+
+        function hideDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'none';
+            if(exerciseBlob) URL.revokeObjectURL(exerciseBlob.url);
+            if(answerBlob) URL.revokeObjectURL(answerBlob.url);
+            exerciseBlob = null;
+            answerBlob = null;
+        }
+
         function numberToBulgarian(num) {
             if (document.getElementById('numberToggle').checked) return num.toString();
             
@@ -270,7 +336,6 @@
             return tens[ten] + (unit > 0 ? ' и ' + units[unit] : '');
         }
 
-        // Document Generation Functions
         function createDocContent(content, title) {
             return `<html>
 <head>
@@ -287,8 +352,19 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 </html>`;
         }
 
+        function needsRegrouping(a, b, operation) {
+            if (operation === 'addition') {
+                return (a % 10) + (b % 10) >= 10;
+            }
+            if (operation === 'subtraction') {
+                return (a % 10) < (b % 10);
+            }
+            return false;
+        }
+
         function generateDocuments() {
             try {
+                const regroupingMode = document.getElementById('regroupingToggle').value;
                 const useNumbers = document.getElementById('numberToggle').checked;
                 const answerMin = parseInt(document.getElementById('answerMin').value);
                 const answerMax = parseInt(document.getElementById('answerMax').value);
@@ -302,7 +378,6 @@ ${content.map(line => `<p>${line}</p>`).join('')}
                     division: useNumbers ? '÷' : 'разделено на'
                 };
 
-                // Operation selection and validation
                 ['addition', 'subtraction', 'multiplication', 'division'].forEach(op => {
                     if (document.getElementById(op).checked) operations.push(op);
                 });
@@ -313,43 +388,55 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 
                 let problems = [];
                 let attempts = 0;
-                const maxAttempts = numEquations * 3;
+                const maxAttempts = numEquations * 10;
 
                 while (problems.length < numEquations && attempts < maxAttempts) {
                     attempts++;
                     const operation = operations[Math.floor(Math.random() * operations.length)];
                     let a, b, result;
+                    let needsRegroup = false;
 
-                    // Generate valid equation parameters
-                    result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
-                    
-                    // Operation-specific logic
-                    if (operation === 'addition') {
-                        a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
-                        b = result - a;
-                        if (b < 1 || b > equationMax) continue;
-                    } 
-                    else if (operation === 'subtraction') {
-                        b = Math.floor(Math.random() * (Math.min(equationMax, result + equationMax) - 1 + 1)) + 1;
-                        a = result + b;
-                        if (a > equationMax) continue;
-                    }
-                    else if (operation === 'multiplication') {
-                        const factors = [];
-                        for(let x = 1; x <= equationMax; x++) {
-                            if(result % x === 0 && (result / x) <= equationMax) {
-                                factors.push(x);
-                            }
+                    let valid = false;
+                    do {
+                        result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
+
+                        if (operation === 'addition') {
+                            a = Math.floor(Math.random() * (equationMax - 1)) + 1;
+                            b = result - a;
+                            valid = b > 0 && b <= equationMax;
+                            if (valid) needsRegroup = needsRegrouping(a, b, operation);
+                        } 
+                        else if (operation === 'subtraction') {
+                            b = Math.floor(Math.random() * (equationMax - 1)) + 1;
+                            a = result + b;
+                            valid = a <= equationMax;
+                            if (valid) needsRegroup = needsRegrouping(a, b, operation);
                         }
-                        if(factors.length === 0) continue;
-                        a = factors[Math.floor(Math.random() * factors.length)];
-                        b = result / a;
-                    }
-                    else if (operation === 'division') {
-                        b = Math.floor(Math.random() * (equationMax - 1 + 1)) + 1;
-                        a = result * b;
-                        if (a > equationMax) continue;
-                    }
+                        else if (operation === 'multiplication') {
+                            const factors = [];
+                            for(let x = 1; x <= equationMax; x++) {
+                                if(result % x === 0 && (result / x) <= equationMax) {
+                                    factors.push(x);
+                                }
+                            }
+                            if(factors.length === 0) continue;
+                            a = factors[Math.floor(Math.random() * factors.length)];
+                            b = result / a;
+                            valid = true;
+                        }
+                        else if (operation === 'division') {
+                            b = Math.floor(Math.random() * (equationMax - 1)) + 1;
+                            a = result * b;
+                            valid = a <= equationMax;
+                        }
+
+                        if (valid) {
+                            if (regroupingMode === 'none' && needsRegroup) valid = false;
+                            if (regroupingMode === 'only' && !needsRegroup) valid = false;
+                        }
+                    } while (!valid && attempts++ < maxAttempts);
+
+                    if (!valid) continue;
 
                     const displayA = useNumbers ? a : numberToBulgarian(a);
                     const displayB = useNumbers ? b : numberToBulgarian(b);
@@ -365,26 +452,45 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 Разширете диапазоните за пълен набор.`);
                 }
 
-                // Create and download documents
                 const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
                 const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
 
-                function download(content, filename) {
-                    const blob = new Blob([content], { type: 'application/msword' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = filename;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                }
+                exerciseBlob = {
+                    blob: new Blob([exerciseContent], { type: 'application/msword' }),
+                    url: URL.createObjectURL(new Blob([exerciseContent], { type: 'application/msword' }))
+                };
+                
+                answerBlob = {
+                    blob: new Blob([answerContent], { type: 'application/msword' }),
+                    url: URL.createObjectURL(new Blob([answerContent], { type: 'application/msword' }))
+                };
 
-                download(exerciseContent, 'math_worksheets.doc');
-                setTimeout(() => download(answerContent, 'math_answers.doc'), 500);
+                document.getElementById('downloadExercise').onclick = () => {
+                    const link = document.createElement('a');
+                    link.href = exerciseBlob.url;
+                    link.download = 'math_worksheets.doc';
+                    link.click();
+                };
+
+                document.getElementById('downloadAnswer').onclick = () => {
+                    const link = document.createElement('a');
+                    link.href = answerBlob.url;
+                    link.download = 'math_answers.doc';
+                    link.click();
+                };
+
+                showDownloadModal();
 
             } catch (error) {
                 alert('Възникна грешка: ' + error.message);
                 console.error(error);
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                hideHelp();
+                hideDownloadModal();
             }
         }
     </script>
