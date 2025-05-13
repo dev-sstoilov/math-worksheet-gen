@@ -1,59 +1,215 @@
 <!DOCTYPE html>
-<html>
+<html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <title>Генератор на Уравнения</title>
+    <title>Генератор на Математически Упражнения</title>
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background-color: #f8f9fa;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
+            background-color: var(--background-color);
+            color: var(--primary-color);
         }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .settings-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
         .input-group {
-            margin: 10px 0;
+            margin: 15px 0;
         }
-        label {
-            display: inline-block;
-            margin: 5px 10px 5px 0;
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
             border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .operations-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .operations-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            margin-top: 10px;
+            transition: background-color 0.3s;
+            width: 100%;
         }
+
         button:hover {
-            background-color: #45a049;
+            background-color: #2980b9;
         }
-        input[type="number"], select {
-            padding: 5px;
-            font-size: 16px;
+
+        .help-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            cursor: help;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
     </style>
 </head>
 <body>
-    <h1>Генератор на Уравнения</h1>
-    
-    <div class="input-group">
-        <label>Диапазон на отговорите:<br>
-            От: <input type="number" id="answerMin" value="1" min="0">
-            До: <input type="number" id="answerMax" value="20" min="1">
-        </label>
+    <div class="header">
+        <h1>Генератор на Математически Упражнения</h1>
+        <button class="help-btn" onclick="showHelp()">?</button>
     </div>
-    
-    <div class="input-group">
-        <label>Максимално число в уравненията:
+
+    <div class="settings-panel">
+        <div class="input-group">
+            <label>Формат на числата:</label>
+            <div class="toggle-group">
+                <span>Думи</span>
+                <label class="switch">
+                    <input type="checkbox" id="numberToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Числа</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Диапазон на отговорите:</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="number" id="answerMin" value="1" min="0" placeholder="Минимум">
+                <input type="number" id="answerMax" value="20" min="1" placeholder="Максимум">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Максимално число в уравненията:</label>
             <input type="number" id="equationMax" value="30" min="1">
-        </label>
-    </div>
-    
-    <div class="input-group">
-        <label>Брой уравнения:
+        </div>
+
+        <div class="input-group">
+            <label>Брой уравнения:</label>
             <select id="numEquations">
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -61,27 +217,51 @@
                 <option value="40">40</option>
                 <option value="50">50</option>
             </select>
-        </label>
+        </div>
+
+        <div class="operations-group">
+            <label><input type="checkbox" id="addition" checked> Събиране</label>
+            <label><input type="checkbox" id="subtraction" checked> Изваждане</label>
+            <label><input type="checkbox" id="multiplication"> Умножение</label>
+            <label><input type="checkbox" id="division"> Деление</label>
+        </div>
+
+        <button onclick="generateDocuments()">Генерирай Упражнения + Отговори</button>
     </div>
-    
-    <div class="input-group">
-        <label><input type="checkbox" id="addition" checked> Събиране</label>
-        <label><input type="checkbox" id="subtraction" checked> Изваждане</label>
-        <label><input type="checkbox" id="multiplication"> Умножение</label>
-        <label><input type="checkbox" id="division"> Деление</label>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="hideHelp()">&times;</span>
+            <h3>Помощ за Генератора</h3>
+            <p><strong>Формат на числата:</strong> Изберете дали уравненията да използват числа или думи</p>
+            <p><strong>Диапазон на отговорите:</strong> Определете минималната и максималната стойност на верните отговори</p>
+            <p><strong>Макс. число в уравненията:</strong> Най-голямото число, което може да се появи в задачите</p>
+            <p><strong>Брой уравнения:</strong> Общият брой задачи за генериране</p>
+            <p><strong>Операции:</strong> Изберете математическите действия, които искате да включите</p>
+        </div>
     </div>
-    
-    <button onclick="generateDocuments()">Генерирай DOC</button>
 
     <script>
+        // Help Modal Functions
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        function hideHelp() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // Number to Bulgarian Words Conversion
         function numberToBulgarian(num) {
-            if (num === 0) return 'нула';
+            if (document.getElementById('numberToggle').checked) return num.toString();
+            
             const units = ['','едно','две','три','четири','пет','шест','седем','осем','девет'];
             const teens = ['десет','единадесет','дванадесет','тринадесет','четиринадесет',
                          'петнадесет','шестнадесет','седемнадесет','осемнадесет','деветнадесет'];
             const tens = ['','','двадесет','тридесет','четиридесет','петдесет',
                         'шестдесет','седемдесет','осемдесет','деветдесет'];
 
+            if (num === 0) return 'нула';
             if (num < 10) return units[num];
             if (num >= 10 && num < 20) return teens[num - 10];
             
@@ -90,6 +270,7 @@
             return tens[ten] + (unit > 0 ? ' и ' + units[unit] : '');
         }
 
+        // Document Generation Functions
         function createDocContent(content, title) {
             return `<html>
 <head>
@@ -108,48 +289,41 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 
         function generateDocuments() {
             try {
+                const useNumbers = document.getElementById('numberToggle').checked;
                 const answerMin = parseInt(document.getElementById('answerMin').value);
                 const answerMax = parseInt(document.getElementById('answerMax').value);
                 const equationMax = parseInt(document.getElementById('equationMax').value);
                 const numEquations = parseInt(document.getElementById('numEquations').value);
                 const operations = [];
                 const operationMap = {
-                    addition: 'плюс',
-                    subtraction: 'минус',
-                    multiplication: 'умножено по',
-                    division: 'разделено на'
+                    addition: useNumbers ? '+' : 'плюс',
+                    subtraction: useNumbers ? '-' : 'минус',
+                    multiplication: useNumbers ? '×' : 'умножено по',
+                    division: useNumbers ? '÷' : 'разделено на'
                 };
 
-                if (document.getElementById('addition').checked) operations.push('addition');
-                if (document.getElementById('subtraction').checked) operations.push('subtraction');
-                if (document.getElementById('multiplication').checked) operations.push('multiplication');
-                if (document.getElementById('division').checked) operations.push('division');
+                // Operation selection and validation
+                ['addition', 'subtraction', 'multiplication', 'division'].forEach(op => {
+                    if (document.getElementById(op).checked) operations.push(op);
+                });
 
-                if (operations.length === 0) {
-                    alert('Изберете поне една операция!');
-                    return;
-                }
-                if (answerMin >= answerMax) {
-                    alert('Максималната стойност на отговорите трябва да е по-голяма от минималната!');
-                    return;
-                }
-                if (equationMax < answerMax) {
-                    alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
-                    return;
-                }
+                if (operations.length === 0) return alert('Моля изберете поне една операция!');
+                if (answerMin >= answerMax) return alert('Максималният отговор трябва да е по-голям от минималния!');
+                if (equationMax < answerMax) return alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
 
                 let problems = [];
                 let attempts = 0;
-                const maxAttempts = numEquations * 2; // Prevent infinite loops
+                const maxAttempts = numEquations * 3;
 
                 while (problems.length < numEquations && attempts < maxAttempts) {
                     attempts++;
                     const operation = operations[Math.floor(Math.random() * operations.length)];
                     let a, b, result;
 
-                    // Generate result first within answer range
+                    // Generate valid equation parameters
                     result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
-
+                    
+                    // Operation-specific logic
                     if (operation === 'addition') {
                         a = Math.floor(Math.random() * (Math.min(equationMax, result - 1) - 1 + 1)) + 1;
                         b = result - a;
@@ -177,49 +351,37 @@ ${content.map(line => `<p>${line}</p>`).join('')}
                         if (a > equationMax) continue;
                     }
 
-                    const aWord = numberToBulgarian(a);
-                    const bWord = numberToBulgarian(b);
+                    const displayA = useNumbers ? a : numberToBulgarian(a);
+                    const displayB = useNumbers ? b : numberToBulgarian(b);
                     
-                    const question = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (     )`;
-                    const answer = `${aWord} ${operationMap[operation]} ${bWord} е равно на: (${result})`;
+                    const question = `${displayA} ${operationMap[operation]} ${displayB} = (     )`;
+                    const answer = `${displayA} ${operationMap[operation]} ${displayB} = (${result})`;
                     
                     problems.push({ question, answer });
                 }
 
                 if (problems.length < numEquations) {
-                    alert(`Генерирахме само ${problems.length} от ${numEquations} уравнения поради ограничения. Моля, разширете диапазоните.`);
+                    alert(`Успешно генерирани ${problems.length} от ${numEquations} уравнения. 
+Разширете диапазоните за пълен набор.`);
                 }
 
-                // Create documents
+                // Create and download documents
                 const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
                 const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
 
                 function download(content, filename) {
-                    try {
-                        const blob = new Blob([content], { type: 'application/msword' });
-                        const url = URL.createObjectURL(blob);
-                        
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = filename;
-                        
-                        link.onclick = () => {
-                            setTimeout(() => {
-                                URL.revokeObjectURL(url);
-                                link.remove();
-                            }, 100);
-                        };
-                        
-                        document.body.appendChild(link);
-                        link.click();
-                    } catch (e) {
-                        alert('Грешка при изтегляне: ' + e.message);
-                    }
+                    const blob = new Blob([content], { type: 'application/msword' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    URL.revokeObjectURL(url);
                 }
 
-                download(exerciseContent, 'bulgarian_equations.doc');
-                setTimeout(() => download(answerContent, 'bulgarian_answers.doc'), 500);
-                
+                download(exerciseContent, 'math_worksheets.doc');
+                setTimeout(() => download(answerContent, 'math_answers.doc'), 500);
+
             } catch (error) {
                 alert('Възникна грешка: ' + error.message);
                 console.error(error);
