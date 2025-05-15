@@ -17,6 +17,7 @@
             padding: 20px;
             background-color: var(--background-color);
             color: var(--primary-color);
+            font-size: 12pt;
         }
 
         .header {
@@ -184,26 +185,10 @@
         }
 
         .download-btns {
-            display: flex;
-            gap: 15px;
             margin-top: 20px;
-            justify-content: center;
+            text-align: center;
         }
 
-        .download-btn {
-            padding: 12px 25px;
-            background: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .download-btn:hover {
-            background: #2980b9;
-        }
-        
         .about-me {
             text-align: center;
             margin-top: 30px;
@@ -258,11 +243,6 @@
         </div>
 
         <div class="input-group">
-            <label>Максимално число в уравненията:</label>
-            <input type="number" id="equationMax" value="30" min="1">
-        </div>
-
-        <div class="input-group">
             <label>Брой уравнения:</label>
             <select id="numEquations">
                 <option value="10">10</option>
@@ -298,7 +278,6 @@
                 - Смесени: Случайна комбинация
             </p>
             <p><strong>Диапазон на отговорите:</strong> Определете минималната и максималната стойност на верните отговори</p>
-            <p><strong>Макс. число в уравненията:</strong> Най-голямото число, което може да се появи в задачите</p>
             <p><strong>Брой уравнения:</strong> Общият брой задачи за генериране</p>
             <p><strong>Операции:</strong> Изберете математическите действия, които искате да включите</p>
         </div>
@@ -308,13 +287,13 @@
         <div class="modal-content">
             <h3>Документите са готови за изтегляне</h3>
             <div class="download-btns">
-                <button class="download-btn" id="downloadExercise">Упражнения</button>
-                <button class="download-btn" id="downloadAnswer">Отговори</button>
+                <button class="download-btn" onclick="startDownload()">Изтегли и двете файла</button>
             </div>
         </div>
     </div>
 
     <script>
+        let problems = [];
         let exerciseBlob = null;
         let answerBlob = null;
 
@@ -332,10 +311,8 @@
 
         function hideDownloadModal() {
             document.getElementById('downloadModal').style.display = 'none';
-            if(exerciseBlob) URL.revokeObjectURL(exerciseBlob.url);
-            if(answerBlob) URL.revokeObjectURL(answerBlob.url);
-            exerciseBlob = null;
-            answerBlob = null;
+            if(exerciseBlob) URL.revokeObjectURL(exerciseBlob);
+            if(answerBlob) URL.revokeObjectURL(answerBlob);
         }
 
         function numberToBulgarian(num) {
@@ -362,7 +339,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>${title}</title>
 <style>
-body { font-family: Arial; font-size: 16pt; }
+body { font-family: Arial; font-size: 12pt; }
 p { margin: 15px 0; line-height: 1.5; }
 </style>
 </head>
@@ -382,15 +359,68 @@ ${content.map(line => `<p>${line}</p>`).join('')}
             return false;
         }
 
+        function generateUniqueProblem(operations, answerMin, answerMax, regroupingMode, usedCombinations) {
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            let a, b, result;
+            let needsRegroup = false;
+            const maxAttempts = 100;
+            
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
+                const maxNumber = answerMax * 2;
+
+                if (operation === 'addition') {
+                    a = Math.floor(Math.random() * (maxNumber - 1)) + 1;
+                    b = result - a;
+                    if (b <= 0 || b > maxNumber) continue;
+                    needsRegroup = needsRegrouping(a, b, operation);
+                } 
+                else if (operation === 'subtraction') {
+                    b = Math.floor(Math.random() * (maxNumber - 1)) + 1;
+                    a = result + b;
+                    if (a > maxNumber) continue;
+                    needsRegroup = needsRegrouping(a, b, operation);
+                }
+                else if (operation === 'multiplication') {
+                    const factors = [];
+                    for(let x = 1; x <= answerMax; x++) {
+                        if(result % x === 0) factors.push(x);
+                    }
+                    if(factors.length === 0) continue;
+                    a = factors[Math.floor(Math.random() * factors.length)];
+                    b = result / a;
+                }
+                else if (operation === 'division') {
+                    b = Math.floor(Math.random() * (answerMax - 1)) + 1;
+                    a = result * b;
+                    if (a > answerMax * 2) continue;
+                }
+
+                const validRegroup = 
+                    (regroupingMode === 'none' && !needsRegroup) ||
+                    (regroupingMode === 'only' && needsRegroup) ||
+                    (regroupingMode === 'mixed');
+
+                if (!validRegroup) continue;
+
+                const key = `${operation}-${a}-${b}-${result}`;
+                if (!usedCombinations.has(key)) {
+                    usedCombinations.add(key);
+                    return { a, b, result, operation };
+                }
+            }
+            return null;
+        }
+
         function generateDocuments() {
             try {
                 const regroupingMode = document.getElementById('regroupingToggle').value;
                 const useNumbers = document.getElementById('numberToggle').checked;
                 const answerMin = parseInt(document.getElementById('answerMin').value);
                 const answerMax = parseInt(document.getElementById('answerMax').value);
-                const equationMax = parseInt(document.getElementById('equationMax').value);
                 const numEquations = parseInt(document.getElementById('numEquations').value);
                 const operations = [];
+                const usedCombinations = new Set();
                 const operationMap = {
                     addition: useNumbers ? '+' : 'плюс',
                     subtraction: useNumbers ? '-' : 'минус',
@@ -404,107 +434,49 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 
                 if (operations.length === 0) return alert('Моля изберете поне една операция!');
                 if (answerMin >= answerMax) return alert('Максималният отговор трябва да е по-голям от минималния!');
-                if (equationMax < answerMax) return alert('Максималното число в уравненията трябва да е по-голямо или равно на максималния отговор!');
 
-                let problems = [];
-                let attempts = 0;
-                const maxAttempts = numEquations * 10;
-
-                while (problems.length < numEquations && attempts < maxAttempts) {
-                    attempts++;
-                    const operation = operations[Math.floor(Math.random() * operations.length)];
-                    let a, b, result;
-                    let needsRegroup = false;
-
-                    let valid = false;
-                    do {
-                        result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
-
-                        if (operation === 'addition') {
-                            a = Math.floor(Math.random() * (equationMax - 1)) + 1;
-                            b = result - a;
-                            valid = b > 0 && b <= equationMax;
-                            if (valid) needsRegroup = needsRegrouping(a, b, operation);
-                        } 
-                        else if (operation === 'subtraction') {
-                            b = Math.floor(Math.random() * (equationMax - 1)) + 1;
-                            a = result + b;
-                            valid = a <= equationMax;
-                            if (valid) needsRegroup = needsRegrouping(a, b, operation);
-                        }
-                        else if (operation === 'multiplication') {
-                            const factors = [];
-                            for(let x = 1; x <= equationMax; x++) {
-                                if(result % x === 0 && (result / x) <= equationMax) {
-                                    factors.push(x);
-                                }
-                            }
-                            if(factors.length === 0) continue;
-                            a = factors[Math.floor(Math.random() * factors.length)];
-                            b = result / a;
-                            valid = true;
-                        }
-                        else if (operation === 'division') {
-                            b = Math.floor(Math.random() * (equationMax - 1)) + 1;
-                            a = result * b;
-                            valid = a <= equationMax;
-                        }
-
-                        if (valid) {
-                            if (regroupingMode === 'none' && needsRegroup) valid = false;
-                            if (regroupingMode === 'only' && !needsRegroup) valid = false;
-                        }
-                    } while (!valid && attempts++ < maxAttempts);
-
-                    if (!valid) continue;
-
+                problems = [];
+                while (problems.length < numEquations) {
+                    const problem = generateUniqueProblem(operations, answerMin, answerMax, regroupingMode, usedCombinations);
+                    if (!problem) break;
+                    
+                    const { a, b, result, operation } = problem;
                     const displayA = useNumbers ? a : numberToBulgarian(a);
                     const displayB = useNumbers ? b : numberToBulgarian(b);
                     
-                    const question = `${displayA} ${operationMap[operation]} ${displayB} = (     )`;
-                    const answer = `${displayA} ${operationMap[operation]} ${displayB} = (${result})`;
-                    
-                    problems.push({ question, answer });
-                }
-
-                if (problems.length < numEquations) {
-                    alert(`Успешно генерирани ${problems.length} от ${numEquations} уравнения. 
-Разширете диапазоните за пълен набор.`);
+                    problems.push({
+                        question: `${displayA} ${operationMap[operation]} ${displayB} = (     )`,
+                        answer: `${displayA} ${operationMap[operation]} ${displayB} = (${result})`
+                    });
                 }
 
                 const exerciseContent = createDocContent(problems.map(p => p.question), "Упражнения");
                 const answerContent = createDocContent(problems.map(p => p.answer), "Отговори");
 
-                exerciseBlob = {
-                    blob: new Blob([exerciseContent], { type: 'application/msword' }),
-                    url: URL.createObjectURL(new Blob([exerciseContent], { type: 'application/msword' }))
-                };
-                
-                answerBlob = {
-                    blob: new Blob([answerContent], { type: 'application/msword' }),
-                    url: URL.createObjectURL(new Blob([answerContent], { type: 'application/msword' }))
-                };
-
-                document.getElementById('downloadExercise').onclick = () => {
-                    const link = document.createElement('a');
-                    link.href = exerciseBlob.url;
-                    link.download = 'math_worksheets.doc';
-                    link.click();
-                };
-
-                document.getElementById('downloadAnswer').onclick = () => {
-                    const link = document.createElement('a');
-                    link.href = answerBlob.url;
-                    link.download = 'math_answers.doc';
-                    link.click();
-                };
+                exerciseBlob = URL.createObjectURL(new Blob([exerciseContent], { type: 'application/msword' }));
+                answerBlob = URL.createObjectURL(new Blob([answerContent], { type: 'application/msword' }));
 
                 showDownloadModal();
-
             } catch (error) {
                 alert('Възникна грешка: ' + error.message);
                 console.error(error);
             }
+        }
+
+        function startDownload() {
+            const exerciseLink = document.createElement('a');
+            exerciseLink.href = exerciseBlob;
+            exerciseLink.download = 'math_worksheets.doc';
+            exerciseLink.click();
+
+            setTimeout(() => {
+                const answerLink = document.createElement('a');
+                answerLink.href = answerBlob;
+                answerLink.download = 'math_answers.doc';
+                answerLink.click();
+                
+                setTimeout(hideDownloadModal, 300);
+            }, 500);
         }
 
         window.onclick = function(event) {
