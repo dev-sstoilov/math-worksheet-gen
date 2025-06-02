@@ -251,23 +251,6 @@
         </div>
 
         <div class="input-group">
-            <label>Настройки за пренасяне:</label>
-            <select id="regroupingToggle">
-                <option value="none">Без пренасяне</option>
-                <option value="only">Само с пренасяне</option>
-                <option value="mixed">Смесени</option>
-            </select>
-        </div>
-
-        <div class="input-group">
-            <label>Диапазон на отговорите:</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="number" id="answerMin" value="1" min="0" placeholder="Минимум">
-                <input type="number" id="answerMax" value="20" min="1" placeholder="Максимум">
-            </div>
-        </div>
-
-        <div class="input-group">
             <label>Брой уравнения:</label>
             <input type="number" id="numEquations" value="30" min="1" placeholder="Въведете брой">
         </div>
@@ -296,6 +279,14 @@
                                 <input type="number" class="operand2-max" placeholder="Макс">
                             </div>
                         </div>
+                        <div class="input-group">
+                            <label>Настройки за пренасяне:</label>
+                            <select class="regrouping-toggle">
+                                <option value="none">Без пренасяне</option>
+                                <option value="only">Само с пренасяне</option>
+                                <option value="mixed">Смесени</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="operation">
@@ -318,6 +309,14 @@
                                 <input type="number" class="operand2-min" placeholder="Мин">
                                 <input type="number" class="operand2-max" placeholder="Макс">
                             </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Настройки за преминаване:</label>
+                            <select class="regrouping-toggle">
+                                <option value="none">Без преминаване</option>
+                                <option value="only">Само със преминаване</option>
+                                <option value="mixed">Смесени</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -382,12 +381,12 @@
             <span class="close-btn" onclick="hideHelp()">&times;</span>
             <h3>Помощ за Генератора</h3>
             <p><strong>Формат на числата:</strong> Изберете дали уравненията да използват числа или думи</p>
-            <p><strong>Пренасяне:</strong> 
+            <p><strong>Пренасяне/Заемане:</strong> 
                 - Без: Никога не изисква пренасяне/заемане<br>
                 - Само: Винаги изисква пренасяне/заемане<br>
-                - Смесени: Случайна комбинация
+                - Смесени: Случайна комбинация<br>
+                (Настройката е отделна за събиране и изваждане)
             </p>
-            <p><strong>Диапазон на отговорите:</strong> Определете минималната и максималната стойност на верните отговори</p>
             <p><strong>Персонализирани диапазони:</strong> За всяка операция можете да зададете отделни минимални и максимални стойности за всяко от числата в израза. Оставете празно за автоматично определяне.</p>
             <p><strong>Брой уравнения:</strong> Въведете желания брой задачи (неограничен брой)</p>
             <p><strong>Операции:</strong> Изберете математическите действия, които искате да включите</p>
@@ -484,6 +483,7 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 
         function getOperationSettings(operation) {
             const opDiv = document.getElementById(operation).closest('.operation');
+            const regroupingMode = opDiv.querySelector('.regrouping-toggle')?.value || 'mixed';
             
             return {
                 operand1: {
@@ -493,11 +493,12 @@ ${content.map(line => `<p>${line}</p>`).join('')}
                 operand2: {
                     min: parseInt(opDiv.querySelector('.operand2-min').value) || 1,
                     max: parseInt(opDiv.querySelector('.operand2-max').value) || 100
-                }
+                },
+                regroupingMode: regroupingMode
             };
         }
 
-        function generateUniqueProblem(operations, answerMin, answerMax, regroupingMode, usedCombinations) {
+        function generateUniqueProblem(operations, usedCombinations) {
             const operation = operations[Math.floor(Math.random() * operations.length)];
             let a, b, result;
             let needsRegroup = false;
@@ -505,63 +506,59 @@ ${content.map(line => `<p>${line}</p>`).join('')}
             const settings = getOperationSettings(operation);
             
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                result = Math.floor(Math.random() * (answerMax - answerMin + 1)) + answerMin;
-                
                 if (operation === 'addition') {
                     const minA = settings?.operand1?.min || 1;
-                    const maxA = settings?.operand1?.max || answerMax * 2;
+                    const maxA = settings?.operand1?.max || 100;
                     const minB = settings?.operand2?.min || 1;
-                    const maxB = settings?.operand2?.max || answerMax * 2;
+                    const maxB = settings?.operand2?.max || 100;
                     
                     a = Math.floor(Math.random() * (maxA - minA + 1)) + minA;
-                    b = result - a;
-                    if (b < minB || b > maxB) continue;
+                    b = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
+                    result = a + b;
                     needsRegroup = needsRegrouping(a, b, operation);
                 } 
                 else if (operation === 'subtraction') {
                     const minB = settings?.operand2?.min || 1;
-                    const maxB = settings?.operand2?.max || answerMax * 2;
+                    const maxB = settings?.operand2?.max || 100;
                     const minA = settings?.operand1?.min || 1;
-                    const maxA = settings?.operand1?.max || answerMax * 2;
+                    const maxA = settings?.operand1?.max || 100;
                     
                     b = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
-                    a = result + b;
-                    if (a < minA || a > maxA) continue;
+                    a = Math.floor(Math.random() * (maxA - minA + 1)) + minA;
+                    if (a < b) [a, b] = [b, a]; // Ensure positive result
+                    result = a - b;
                     needsRegroup = needsRegrouping(a, b, operation);
                 }
                 else if (operation === 'multiplication') {
-                    const factors = [];
-                    const minFactor = settings?.operand1?.min || 1;
-                    const maxFactor = settings?.operand1?.max || answerMax;
+                    const minA = settings?.operand1?.min || 1;
+                    const maxA = settings?.operand1?.max || 12;
+                    const minB = settings?.operand2?.min || 1;
+                    const maxB = settings?.operand2?.max || 12;
                     
-                    for(let x = minFactor; x <= maxFactor; x++) {
-                        if(result % x === 0) factors.push(x);
-                    }
-                    if(factors.length === 0) continue;
-                    a = factors[Math.floor(Math.random() * factors.length)];
-                    b = result / a;
-                    
-                    if (settings?.operand2) {
-                        if (b < settings.operand2.min || b > settings.operand2.max) continue;
-                    }
+                    a = Math.floor(Math.random() * (maxA - minA + 1)) + minA;
+                    b = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
+                    result = a * b;
                 }
                 else if (operation === 'division') {
                     const minB = settings?.operand2?.min || 1;
-                    const maxB = settings?.operand2?.max || answerMax;
+                    const maxB = settings?.operand2?.max || 12;
                     const minA = settings?.operand1?.min || 1;
-                    const maxA = settings?.operand1?.max || answerMax * 2;
+                    const maxA = settings?.operand1?.max || 144;
                     
                     b = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
+                    result = Math.floor(Math.random() * (Math.floor(maxA/b) - Math.ceil(minA/b) + 1)) + Math.ceil(minA/b);
                     a = result * b;
-                    if (a < minA || a > maxA) continue;
                 }
 
-                const validRegroup = 
-                    (regroupingMode === 'none' && !needsRegroup) ||
-                    (regroupingMode === 'only' && needsRegroup) ||
-                    (regroupingMode === 'mixed');
-
-                if (!validRegroup) continue;
+                // Check regrouping settings for addition and subtraction
+                if (operation === 'addition' || operation === 'subtraction') {
+                    const validRegroup = 
+                        (settings.regroupingMode === 'none' && !needsRegroup) ||
+                        (settings.regroupingMode === 'only' && needsRegroup) ||
+                        (settings.regroupingMode === 'mixed');
+                    
+                    if (!validRegroup) continue;
+                }
 
                 const key = `${operation}-${a}-${b}-${result}`;
                 if (!usedCombinations.has(key)) {
@@ -574,10 +571,7 @@ ${content.map(line => `<p>${line}</p>`).join('')}
 
         function generateDocuments() {
             try {
-                const regroupingMode = document.getElementById('regroupingToggle').value;
                 const useNumbers = document.getElementById('numberToggle').checked;
-                const answerMin = parseInt(document.getElementById('answerMin').value);
-                const answerMax = parseInt(document.getElementById('answerMax').value);
                 const numEquations = Math.max(1, parseInt(document.getElementById('numEquations').value) || 30);
                 const operations = [];
                 const usedCombinations = new Set();
@@ -593,11 +587,10 @@ ${content.map(line => `<p>${line}</p>`).join('')}
                 });
 
                 if (operations.length === 0) return alert('Моля изберете поне една операция!');
-                if (answerMin >= answerMax) return alert('Максималният отговор трябва да е по-голям от минималния!');
 
                 problems = [];
                 while (problems.length < numEquations) {
-                    const problem = generateUniqueProblem(operations, answerMin, answerMax, regroupingMode, usedCombinations);
+                    const problem = generateUniqueProblem(operations, usedCombinations);
                     if (!problem) break;
                     
                     const { a, b, result, operation } = problem;
