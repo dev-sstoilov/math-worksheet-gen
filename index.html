@@ -456,17 +456,36 @@
         }
 
         function createDocContent(content, title) {
+            // Create a table with 4 columns for the exercises
+            let tableHTML = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
+            for (let i = 0; i < content.length; i += 4) {
+                tableHTML += '<tr>';
+                for (let j = 0; j < 4; j++) {
+                    const index = i + j;
+                    let cellContent = '';
+                    if (index < content.length) {
+                        cellContent = content[index];
+                    }
+                    tableHTML += `<td style="width: 25%; padding: 10px; vertical-align: top;">${cellContent}</td>`;
+                }
+                tableHTML += '</tr>';
+            }
+            tableHTML += '</table>';
+            
             return `<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>${title}</title>
 <style>
 body { font-family: Arial; font-size: 12pt; }
-p { margin: 15px 0; line-height: 1.5; }
+p { margin: 0; line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 10px; vertical-align: top; }
 </style>
 </head>
 <body>
-${content.map(line => `<p>${line}</p>`).join('')}
+<h2 style="text-align: center; margin-bottom: 20px;">${title}</h2>
+${tableHTML}
 </body>
 </html>`;
         }
