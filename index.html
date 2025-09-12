@@ -1,0 +1,465 @@
+﻿<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор на математически работи листи</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #1a73e8;
+            --light-blue: #4285f4;
+            --dark-blue: #0d47a1;
+            --white: #ffffff;
+            --black: #333333;
+            --light-gray: #f5f7fa;
+            --border-blue: #1565c0;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--black);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            color: var(--white);
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: var(--shadow);
+            flex-shrink: 0;
+        }
+
+            header h1 {
+                font-size: 2.2rem;
+                margin-bottom: 8px;
+            }
+
+            header p {
+                font-size: 1rem;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+
+        .content {
+            padding: 20px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .description {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 2px solid var(--border-blue);
+        }
+
+            .description h2 {
+                color: var(--light-blue);
+                margin-bottom: 15px;
+                font-size: 1.5rem;
+            }
+
+            .description p {
+                margin-bottom: 12px;
+                font-size: 1rem;
+            }
+
+        .video-container {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 2px solid var(--border-blue);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .video-title {
+            color: var(--light-blue);
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .video-embed-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+            .video-embed-container iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px 0;
+            position: sticky;
+            bottom: 0;
+            background: var(--light-gray);
+            z-index: 100;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(to right, var(--primary-blue), var(--dark-blue));
+            color: var(--white);
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 14px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+            .download-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            }
+
+            .download-btn:active {
+                transform: translateY(0);
+            }
+
+        .author-btn {
+            display: inline-block;
+            background-color: var(--white);
+            color: var(--primary-blue);
+            font-size: 1rem;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 2px solid var(--border-blue);
+            flex-shrink: 0;
+        }
+
+            .author-btn:hover {
+                background-color: var(--primary-blue);
+                color: var(--white);
+            }
+
+        footer {
+            background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue));
+            color: var(--white);
+            text-align: center;
+            padding: 15px 0;
+            flex-shrink: 0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--border-blue);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #888;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+            .close-modal:hover {
+                color: var(--black);
+            }
+
+        .modal-title {
+            color: var(--light-blue);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-text {
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .modal-video {
+            margin-bottom: 25px;
+            height: 400px;
+        }
+
+        .modal-video-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+            .modal-video-container iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .video-embed-container iframe {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            header p {
+                font-size: 0.9rem;
+            }
+
+            .description {
+                padding: 15px;
+            }
+
+                .description h2 {
+                    font-size: 1.3rem;
+                }
+
+            .video-title {
+                font-size: 1.1rem;
+            }
+
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .download-btn, .author-btn {
+                width: 100%;
+                max-width: 300px;
+                text-align: center;
+            }
+
+            .modal-video {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .modal-content {
+                padding: 20px;
+            }
+
+            header {
+                padding: 15px 0;
+            }
+
+                header h1 {
+                    font-size: 1.6rem;
+                }
+
+            .modal-video {
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .download-btn, .author-btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .modal-video {
+                height: 200px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            header {
+                padding: 15px 0;
+            }
+
+                header h1 {
+                    font-size: 1.8rem;
+                }
+
+            .description h2 {
+                font-size: 1.3rem;
+            }
+
+            .video-title {
+                font-size: 1.1rem;
+                margin-bottom: 10px;
+            }
+
+            .modal-video {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Генератор на математически работни листове</h1>
+            <p>Мощен инструмент за учители и родители за създаване на персонализирани математически задания</p>
+        </div>
+    </header>
+
+    <div class="container content">
+        <section class="description">
+            <h2>За програмата</h2>
+            <p>Нашият генератор на математически работни документи позволява бързо и лесно да създавате персонализирани задания за ученици от 1 до 5 клас. С тази програма можете да генерирате задачи със събиране, изваждане, умножение и деление.</p>
+            <p>Можете да зададете броя на уравненията, колко големи могат да са числата и да получите готови Word документи - един с въпросите и друг с отговорите. Перфектен инструмент за родители, които искат да създадат разнообразни упражнения за своите деца без да купуват нови учебници постоянно.</p>
+        </section>
+
+        <section class="video-container">
+            <h3 class="video-title">Демо на програмата в действие</h3>
+            <div class="video-embed-container">
+                <iframe width="100%" height="100%" style="border:0;" scrolling="no" src="https://go.screenpal.com/player/cTQl2hnopgk?width=100%&height=100%&ff=1&title=0" allowfullscreen="true"></iframe>
+            </div>
+        </section>
+    </div>
+
+    <div class="button-container">
+        <a href="https://www.dropbox.com/scl/fi/oys5whqd2m5havczv59bp/worksheet-gen.exe?e=1&amp;dl=1" class="download-btn" id="downloadBtn">
+            <i class="fas fa-download"></i> Изтегли сега
+        </a>
+        <a href="https://dev-sstoilov.github.io" target="_blank" class="author-btn">
+            За автора <i class="fas fa-external-link-alt"></i>
+        </a>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>© 2025-2026 Генератор на математически уравнения. Всички права запазени.</p>
+        </div>
+    </footer>
+
+    <!-- Download Modal -->
+    <div class="modal" id="downloadModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <h3 class="modal-title">Благодарим ви, че изтеглихте нашето приложение!</h3>
+            <p class="modal-text">Програмата поддържа Windows 10 и Windows 11. Насладете се на създаването на математически листове!</p>
+
+            <div class="modal-video">
+                <div class="modal-video-container">
+                    <iframe width="100%" height="100%" style="border:0;" scrolling="no" src="https://go.screenpal.com/player/cTQl2hnopgk?width=100%&height=100%&ff=1&title=0" allowfullscreen="true"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('downloadModal');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const closeModal = document.getElementById('closeModal');
+
+            downloadBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                modal.style.display = 'flex';
+
+                // Start download in the background
+                const downloadLink = document.createElement('a');
+                downloadLink.href = this.href;
+                downloadLink.download = '';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Close modal after 5 seconds
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 5000);
+            });
+
+            closeModal.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
