@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор на математически работи листи</title>
+    <title>Генератор на математически работни листи</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -92,46 +92,46 @@
                 font-size: 1rem;
             }
 
-        .video-container {
+        .features {
             background-color: var(--white);
             padding: 20px;
             border-radius: 12px;
             box-shadow: var(--shadow);
             margin-bottom: 20px;
             border: 2px solid var(--border-blue);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
         }
 
-        .video-title {
+        .features-title {
             color: var(--light-blue);
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 1.3rem;
         }
 
-        .video-embed-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-            flex: 1;
-            min-height: 0;
-            position: relative;
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
 
-            .video-embed-container iframe {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                border: none;
-            }
+        .feature-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--light-gray);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--dark-blue);
+        }
 
         .button-container {
             display: flex;
@@ -223,6 +223,7 @@
             border: 2px solid var(--border-blue);
             max-height: 90vh;
             overflow-y: auto;
+            text-align: center;
         }
 
         .close-modal {
@@ -251,32 +252,13 @@
             font-size: 1.1rem;
         }
 
-        .modal-video {
-            margin-bottom: 25px;
-            height: 400px;
+        .modal-icon {
+            font-size: 4rem;
+            color: var(--primary-blue);
+            margin: 20px 0;
         }
-
-        .modal-video-container {
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        }
-
-            .modal-video-container iframe {
-                width: 100%;
-                height: 100%;
-                border: none;
-            }
 
         /* Responsive Design */
-        @media (max-width: 900px) {
-            .video-embed-container iframe {
-                height: 400px;
-            }
-        }
-
         @media (max-width: 768px) {
             header h1 {
                 font-size: 1.8rem;
@@ -294,7 +276,7 @@
                     font-size: 1.3rem;
                 }
 
-            .video-title {
+            .features-title {
                 font-size: 1.1rem;
             }
 
@@ -308,10 +290,6 @@
                 width: 100%;
                 max-width: 300px;
                 text-align: center;
-            }
-
-            .modal-video {
-                height: 300px;
             }
         }
 
@@ -327,10 +305,6 @@
                 header h1 {
                     font-size: 1.6rem;
                 }
-
-            .modal-video {
-                height: 250px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -343,8 +317,8 @@
                 font-size: 0.9rem;
             }
 
-            .modal-video {
-                height: 200px;
+            .features-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -361,13 +335,9 @@
                 font-size: 1.3rem;
             }
 
-            .video-title {
+            .features-title {
                 font-size: 1.1rem;
-                margin-bottom: 10px;
-            }
-
-            .modal-video {
-                height: 250px;
+                margin-bottom: 15px;
             }
         }
     </style>
@@ -387,10 +357,37 @@
             <p>Можете да зададете броя на уравненията, колко големи могат да са числата, заедно с още много други настройки и да получите готови Word документи - един с въпросите и друг с отговорите. Перфектен инструмент за родители, които искат да създадат разнообразни упражнения за своите деца без да купуват нови учебници постоянно.</p>
         </section>
 
-        <section class="video-container">
-            <h3 class="video-title">Демо на програмата в действие</h3>
-            <div class="video-embed-container">
-                <iframe width="100%" height="100%" style="border:0;" scrolling="no" src="https://go.screenpal.com/player/cTQl2hnopgk?width=100%&height=100%&ff=1&title=0" allowfullscreen="true"></iframe>
+        <section class="features">
+            <h3 class="features-title">Основни характеристики</h3>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="feature-title">Четири операции</div>
+                    <div>Събиране, изваждане, умножение и деление</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <div class="feature-title">Персонализация</div>
+                    <div>Настройте сложността и броя на задачите</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-word"></i>
+                    </div>
+                    <div class="feature-title">Word документи</div>
+                    <div>Генериране на задачи и отговори във формат Word</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-child"></i>
+                    </div>
+                    <div class="feature-title">За деца до 2 клас</div>
+                    <div>Създадено специално за най-малките ученици</div>
+                </div>
             </div>
         </section>
     </div>
@@ -406,7 +403,7 @@
 
     <footer>
         <div class="container">
-            <p>© 2025-2026 Генератор на математически уравнения. Всички права запазени.</p>
+            <p>© 2025-2027 Генератор на математически уравнения. Всички права запазени.</p>
         </div>
     </footer>
 
@@ -416,12 +413,10 @@
             <span class="close-modal" id="closeModal">&times;</span>
             <h3 class="modal-title">Благодарим ви, че изтеглихте нашето приложение!</h3>
             <p class="modal-text">Програмата поддържа Windows 10 и Windows 11. Насладете се на създаването на задачи по математика!</p>
-
-            <div class="modal-video">
-                <div class="modal-video-container">
-                    <iframe width="100%" height="100%" style="border:0;" scrolling="no" src="https://go.screenpal.com/player/cTQl2hnopgk?width=100%&height=100%&ff=1&title=0" allowfullscreen="true"></iframe>
-                </div>
+            <div class="modal-icon">
+                <i class="fas fa-check-circle"></i>
             </div>
+            <p class="modal-text">Изтеглянето започна автоматично. Ако не се стартира, моля кликнете отново на бутона за изтегляне.</p>
         </div>
     </div>
 
@@ -463,5 +458,3 @@
     </script>
 </body>
 </html>
-
-
