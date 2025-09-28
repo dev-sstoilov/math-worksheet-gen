@@ -420,18 +420,17 @@
             <p class="modal-text">Изтеглянето започна автоматично. Ако не се стартира, моля кликнете отново на бутона за изтегляне.</p>
         </div>
     </div>
-
     <script>
         // Modal functionality
         document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('downloadModal');
             const downloadBtn = document.getElementById('downloadBtn');
             const closeModal = document.getElementById('closeModal');
-
+    
             downloadBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 modal.style.display = 'flex';
-
+    
                 // Start download in the background
                 const downloadLink = document.createElement('a');
                 downloadLink.href = this.href;
@@ -439,17 +438,12 @@
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
-
-                // Close modal after 5 seconds
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 5000);
             });
-
+    
             closeModal.addEventListener('click', function () {
                 modal.style.display = 'none';
             });
-
+    
             window.addEventListener('click', function (event) {
                 if (event.target === modal) {
                     modal.style.display = 'none';
@@ -459,6 +453,7 @@
     </script>
 </body>
 </html>
+
 
 
 
