@@ -546,7 +546,41 @@
                 </div>
             </div>
         </section>
-        <!-- Slideshow (arrow buttons only; keyboard functions removed) -->
+
+        <!-- NEW: Two document previews side-by-side -->
+        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+            <section class="card center" style="max-width: 480px; flex: 1; min-width: 300px;">
+                <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
+
+                <div class="tabs-wrapper">
+                    <div class="tabs" role="tablist" aria-label="Preview tabs">
+                        <div class="tab active" id="tabWorksheet1" role="tab" aria-selected="true" tabindex="0">Работен лист</div>
+                        <div class="tab" id="tabAnswers1" role="tab" aria-selected="false" tabindex="0">Отговори</div>
+                    </div>
+                </div>
+
+                <div class="screenshot-frame" id="screenshotFrame1" style="margin-top:12px;">
+                    <img id="screenshotImg1" class="screenshot-img" src="https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true" alt="Работен лист - визуализация">
+                </div>
+            </section>
+
+            <section class="card center" style="max-width: 480px; flex: 1; min-width: 300px;">
+                <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
+
+                <div class="tabs-wrapper">
+                    <div class="tabs" role="tablist" aria-label="Preview tabs">
+                        <div class="tab active" id="tabWorksheet2" role="tab" aria-selected="true" tabindex="0">Работен лист</div>
+                        <div class="tab" id="tabAnswers2" role="tab" aria-selected="false" tabindex="0">Отговори</div>
+                    </div>
+                </div>
+
+                <div class="screenshot-frame" id="screenshotFrame2" style="margin-top:12px;">
+                    <img id="screenshotImg2" class="screenshot-img" src="https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true" alt="Работен лист - визуализация">
+                </div>
+            </section>
+        </div>
+
+        <!-- Slideshow (installation) -->
         <section class="card center" aria-label="Step by step installation" style="max-width: 980px;">
             <h3 style="color:var(--light-blue); margin-bottom: 12px;">Стъпка по стъпка: Инсталация</h3>
             <div class="slideshow-wrapper">
@@ -568,21 +602,6 @@
             </div>
         </section>
 
-        <!-- Two tabs with screenshots (centered) -->
-        <section class="card center" style="max-width: 760px;">
-            <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
-
-            <div class="tabs-wrapper">
-                <div class="tabs" role="tablist" aria-label="Preview tabs">
-                    <div class="tab active" id="tabWorksheet" role="tab" aria-selected="true" tabindex="0">Работен лист</div>
-                    <div class="tab" id="tabAnswers" role="tab" aria-selected="false" tabindex="0">Отговори</div>
-                </div>
-            </div>
-
-            <div class="screenshot-frame" id="screenshotFrame" style="margin-top:12px;">
-                <img id="screenshotImg" class="screenshot-img" src="https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true" alt="Работен лист - визуализация">
-            </div>
-        </section>
     </div>
 
     <div class="button-container">
@@ -688,41 +707,59 @@
         show(0);
         }
 
-        // ---------- Tabs ----------
-        const tabWorksheet = document.getElementById('tabWorksheet');
-        const tabAnswers = document.getElementById('tabAnswers');
-        const screenshotImg = document.getElementById('screenshotImg');
+        // ---------- Tabs for two independent previews ----------
+        const previewConfigs = [
+            {
+                tabWorksheetId: 'tabWorksheet1',
+                tabAnswersId: 'tabAnswers1',
+                imgId: 'screenshotImg1',
+                urls: {
+                    worksheet: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true",
+                    answers:   "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/answers.png?raw=true"
+                }
+            },
+            {
+                tabWorksheetId: 'tabWorksheet2',
+                tabAnswersId: 'tabAnswers2',
+                imgId: 'screenshotImg2',
+                urls: {
+                    // different default URLs so you can show different document types
+                    worksheet: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true",
+                    answers:   "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/answers2.png?raw=true"
+                }
+            }
+        ];
 
-        if (tabWorksheet && tabAnswers && screenshotImg) {
-        const screenshotUrls = {
-        worksheet: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true",
-        answers:   "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/answers.png?raw=true"
-        };
+        previewConfigs.forEach(cfg => {
+            const tabW = document.getElementById(cfg.tabWorksheetId);
+            const tabA = document.getElementById(cfg.tabAnswersId);
+            const imgEl = document.getElementById(cfg.imgId);
+            if (!tabW || !tabA || !imgEl) return;
 
-        function setActiveTab(name) {
-        if (name === 'worksheet') {
-        tabWorksheet.classList.add('active');
-        tabAnswers.classList.remove('active');
-        tabWorksheet.setAttribute('aria-selected', 'true');
-        tabAnswers.setAttribute('aria-selected', 'false');
-        screenshotImg.src = screenshotUrls.worksheet;
-        screenshotImg.alt = 'Преглед на работен лист';
-        } else {
-        tabWorksheet.classList.remove('active');
-        tabAnswers.classList.add('active');
-        tabWorksheet.setAttribute('aria-selected', 'false');
-        tabAnswers.setAttribute('aria-selected', 'true');
-        screenshotImg.src = screenshotUrls.answers;
-        screenshotImg.alt = 'Преглед на отговори';
-        }
-        }
+            function setActive(name) {
+                if (name === 'worksheet') {
+                    tabW.classList.add('active');
+                    tabA.classList.remove('active');
+                    tabW.setAttribute('aria-selected', 'true');
+                    tabA.setAttribute('aria-selected', 'false');
+                    imgEl.src = cfg.urls.worksheet;
+                    imgEl.alt = 'Преглед на работен лист';
+                } else {
+                    tabW.classList.remove('active');
+                    tabA.classList.add('active');
+                    tabW.setAttribute('aria-selected', 'false');
+                    tabA.setAttribute('aria-selected', 'true');
+                    imgEl.src = cfg.urls.answers;
+                    imgEl.alt = 'Преглед на отговори';
+                }
+            }
 
-        tabWorksheet.addEventListener('click', () => setActiveTab('worksheet'));
-        tabAnswers.addEventListener('click', () => setActiveTab('answers'));
-        setActiveTab('worksheet');
-        }
+            tabW.addEventListener('click', () => setActive('worksheet'));
+            tabA.addEventListener('click', () => setActive('answers'));
+            setActive('worksheet');
+        });
+
         });
     </script>
 </body>
 </html>
-
