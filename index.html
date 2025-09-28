@@ -547,9 +547,9 @@
             </div>
         </section>
 
-        <!-- NEW: Two document previews side-by-side (gap reduced 4x -> 5px) -->
-        <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
-            <section class="card center" style="max-width: 480px; flex: 1; min-width: 300px;">
+        <!-- NEW: Two document previews side-by-side (very small gap, fixed widths to avoid extra space) -->
+        <div style="display:flex; gap:2px; flex-wrap:nowrap; justify-content:center; margin-bottom:20px;">
+            <section class="card center" style="width:460px; flex: none; min-width: 300px;">
                 <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
 
                 <div class="tabs-wrapper">
@@ -560,11 +560,11 @@
                 </div>
 
                 <div class="screenshot-frame" id="screenshotFrame1" style="margin-top:12px;">
-                    <img id="screenshotImg1" class="screenshot-img" src="https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true" alt="Работен лист - визуализация">
+                    <img id="screenshotImg1" class="screenshot-img" loading="eager" alt="Работен лист - визуализация">
                 </div>
             </section>
 
-            <section class="card center" style="max-width: 480px; flex: 1; min-width: 300px;">
+            <section class="card center" style="width:460px; flex: none; min-width: 300px;">
                 <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
 
                 <div class="tabs-wrapper">
@@ -575,7 +575,7 @@
                 </div>
 
                 <div class="screenshot-frame" id="screenshotFrame2" style="margin-top:12px;">
-                    <img id="screenshotImg2" class="screenshot-img" src="https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true" alt="Работен лист - визуализация">
+                    <img id="screenshotImg2" class="screenshot-img" loading="eager" alt="Работен лист - визуализация">
                 </div>
             </section>
         </div>
@@ -633,7 +633,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-        // ---------- fallback data-uri svg ----------
+        // fallback data-uri svg
         var fallback = 'data:image/svg+xml;utf8,' + encodeURIComponent(
             '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
             '<rect fill="#fff" width="100%" height="100%"/>' +
@@ -641,14 +641,15 @@
             '</svg>'
         );
 
-        // Ensure all existing <img> elements use fallback on error
-        document.querySelectorAll('img').forEach(function(img) {
-            img.addEventListener('error', function() {
+        // global error handler for imgs (covers dynamically assigned src as well)
+        function attachFallback(imgElement) {
+            if (!imgElement) return;
+            imgElement.onerror = function () {
                 if (this.src === fallback) return;
                 this.onerror = null;
                 this.src = fallback;
-            });
-        });
+            };
+        }
 
         // ---------- Modal ----------
         const modal = document.getElementById('downloadModal');
@@ -718,6 +719,9 @@
         prevBtn.addEventListener('click', () => show(current - 1));
         nextBtn.addEventListener('click', () => show(current + 1));
 
+        // attach fallback for slideshow main image
+        attachFallback(imgEl);
+
         // preload slides (with error -> fallback)
         slides.forEach(s => {
             const i = new Image();
@@ -752,51 +756,72 @@
             }
         ];
 
-        // preload all preview images and wire tab behavior
+        // Build preload list
         var preloadList = [];
         previewConfigs.forEach(cfg => {
             preloadList.push(cfg.urls.worksheet, cfg.urls.answers);
         });
-
-        // also include slideshow images
         slides.forEach(s => preloadList.push(s));
 
-        // preload and attach error handling
-        preloadList.forEach(function(u) {
-            if (!u) return;
-            const p = new Image();
-            p.onload = function() { /* ok */ };
-            p.onerror = function() { this.src = fallback; };
-            p.src = u;
+        // Preload all and record which URLs succeeded
+        var preloadResults = {}; // url -> true/false
+        var preloadPromises = preloadList.filter(Boolean).map(function(u) {
+            return new Promise(function(resolve) {
+                var i = new Image();
+                i.onload = function() { preloadResults[u] = true; resolve({url:u, ok:true}); };
+                i.onerror = function() { preloadResults[u] = false; resolve({url:u, ok:false}); };
+                i.src = u;
+            });
         });
 
-        previewConfigs.forEach(cfg => {
-            const tabW = document.getElementById(cfg.tabWorksheetId);
-            const tabA = document.getElementById(cfg.tabAnswersId);
-            const imgEl = document.getElementById(cfg.imgId);
-            if (!tabW || !tabA || !imgEl) return;
+        Promise.all(preloadPromises).then(function() {
+            // attach fallback handlers to the preview images
+            previewConfigs.forEach(function(cfg) {
+                var img = document.getElementById(cfg.imgId);
+                attachFallback(img);
+            });
 
-            function setActive(name) {
-                if (name === 'worksheet') {
-                    tabW.classList.add('active');
-                    tabA.classList.remove('active');
-                    tabW.setAttribute('aria-selected', 'true');
-                    tabA.setAttribute('aria-selected', 'false');
-                    imgEl.src = cfg.urls.worksheet;
-                    imgEl.alt = 'Преглед на работен лист';
-                } else {
-                    tabW.classList.remove('active');
-                    tabA.classList.add('active');
-                    tabW.setAttribute('aria-selected', 'false');
-                    tabA.setAttribute('aria-selected', 'true');
-                    imgEl.src = cfg.urls.answers;
-                    imgEl.alt = 'Преглед на отговори';
+            // initialize each preview with the first available (worksheet preferred)
+            previewConfigs.forEach(function(cfg) {
+                var tabW = document.getElementById(cfg.tabWorksheetId);
+                var tabA = document.getElementById(cfg.tabAnswersId);
+                var imgEl = document.getElementById(cfg.imgId);
+                if (!tabW || !tabA || !imgEl) return;
+
+                function chooseSrc(preferredUrl) {
+                    // return preferred if loaded, else fallback
+                    return (preloadResults[preferredUrl] === true) ? preferredUrl : fallback;
                 }
-            }
 
-            tabW.addEventListener('click', () => setActive('worksheet'));
-            tabA.addEventListener('click', () => setActive('answers'));
-            setActive('worksheet');
+                function setActive(name) {
+                    if (name === 'worksheet') {
+                        tabW.classList.add('active');
+                        tabA.classList.remove('active');
+                        tabW.setAttribute('aria-selected', 'true');
+                        tabA.setAttribute('aria-selected', 'false');
+                        imgEl.src = chooseSrc(cfg.urls.worksheet);
+                        imgEl.alt = 'Преглед на работен лист';
+                    } else {
+                        tabW.classList.remove('active');
+                        tabA.classList.add('active');
+                        tabW.setAttribute('aria-selected', 'false');
+                        tabA.setAttribute('aria-selected', 'true');
+                        imgEl.src = chooseSrc(cfg.urls.answers);
+                        imgEl.alt = 'Преглед на отговори';
+                    }
+                }
+
+                tabW.addEventListener('click', function() { setActive('worksheet'); });
+                tabA.addEventListener('click', function() { setActive('answers'); });
+                setActive('worksheet');
+            });
+        }).catch(function() {
+            // fallback: attach handlers and set placeholders immediately
+            previewConfigs.forEach(function(cfg) {
+                var imgEl = document.getElementById(cfg.imgId);
+                attachFallback(imgEl);
+                if (imgEl) imgEl.src = fallback;
+            });
         });
 
         });
