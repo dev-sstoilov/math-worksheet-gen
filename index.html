@@ -501,7 +501,7 @@
 <body>
     <header>
         <div class="container">
-            <h1>Генератор на математически работни листове</h1>
+            <h1>Генератор на математически работни листи</h1>
             <p>Полезен инструмент за учители и родители за създаване на персонализирани математически задания</p>
         </div>
     </header>
@@ -547,8 +547,8 @@
             </div>
         </section>
 
-        <!-- NEW: Two document previews side-by-side -->
-        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+        <!-- NEW: Two document previews side-by-side (gap reduced 4x -> 5px) -->
+        <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
             <section class="card center" style="max-width: 480px; flex: 1; min-width: 300px;">
                 <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
 
@@ -633,6 +633,23 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+        // ---------- fallback data-uri svg ----------
+        var fallback = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
+            '<rect fill="#fff" width="100%" height="100%"/>' +
+            '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#888" font-family="Segoe UI, Arial" font-size="20">Изображение не е налично</text>' +
+            '</svg>'
+        );
+
+        // Ensure all existing <img> elements use fallback on error
+        document.querySelectorAll('img').forEach(function(img) {
+            img.addEventListener('error', function() {
+                if (this.src === fallback) return;
+                this.onerror = null;
+                this.src = fallback;
+            });
+        });
+
         // ---------- Modal ----------
         const modal = document.getElementById('downloadModal');
         const downloadBtn = document.getElementById('downloadBtn');
@@ -701,8 +718,13 @@
         prevBtn.addEventListener('click', () => show(current - 1));
         nextBtn.addEventListener('click', () => show(current + 1));
 
-        // preload
-        slides.forEach(s => { const i = new Image(); i.src = s; });
+        // preload slides (with error -> fallback)
+        slides.forEach(s => {
+            const i = new Image();
+            i.onload = function() { /* loaded */ };
+            i.onerror = function() { this.src = fallback; };
+            i.src = s;
+        });
 
         show(0);
         }
@@ -729,6 +751,24 @@
                 }
             }
         ];
+
+        // preload all preview images and wire tab behavior
+        var preloadList = [];
+        previewConfigs.forEach(cfg => {
+            preloadList.push(cfg.urls.worksheet, cfg.urls.answers);
+        });
+
+        // also include slideshow images
+        slides.forEach(s => preloadList.push(s));
+
+        // preload and attach error handling
+        preloadList.forEach(function(u) {
+            if (!u) return;
+            const p = new Image();
+            p.onload = function() { /* ok */ };
+            p.onerror = function() { this.src = fallback; };
+            p.src = u;
+        });
 
         previewConfigs.forEach(cfg => {
             const tabW = document.getElementById(cfg.tabWorksheetId);
