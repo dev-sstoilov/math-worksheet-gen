@@ -369,8 +369,8 @@
         .slideshow {
             position: relative;
             width: 100%;
-            max-width: none;
-            height: 270px;
+            max-width: 920px;
+            height: 520px;
             background: #fff;
             border-radius: 10px;
             overflow: hidden;
@@ -469,7 +469,6 @@
 
         .screenshot-frame {
             width: 100%;
-            max-width: 680px;
             height: 920px;
             background: #fff;
             border-radius: 6px;
@@ -489,11 +488,43 @@
             display: block;
             background: #fff;
         }
-    .card, .slideshow-wrapper {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-    }
+        
+        .card, .slideshow-wrapper {
+            width: 100%;
+            max-width: 980px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* NEW: Updated preview container styles */
+        .previews-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .preview-card {
+            flex: 1;
+            min-width: 300px;
+            max-width: calc(50% - 10px);
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            border: 2px solid var(--border-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .preview-card {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -508,7 +539,7 @@
         <section class="description">
             <h2>За програмата</h2>
             <p>Нашият генератор на математически работни документи позволява бързо и лесно да създавате задачи за деца до 2 клас със събиране, изваждане, умножение и деление.</p>
-            <p>Можете да зададете броя на уравненията, колко големи могат да са числата, заедно с още много други настройки и да получите готови Word документи - един с въпросите и друг с отговорите. Безценен инструмент за родители, които искат да създадат разнообразни упражнения за своите деца без да купуват постоянно&nbsp;<span style="font-size: 1rem;">нови помагала.</span></p>
+            <p>Можете да зададете броя на уравненияте, колко големи могат да са числата, заедно с още много други настройки и да получите готови Word документи - един с въпросите и друг с отговорите. Безценен инструмент за родители, които искат да създадат разнообразни упражнения за своите деца без да купуват постоянно&nbsp;<span style="font-size: 1rem;">нови помагала.</span></p>
         </section>
 
         <section class="features">
@@ -545,9 +576,9 @@
             </div>
         </section>
 
-        <!-- NEW: Two document previews side-by-side (very small gap, fixed widths to avoid extra space) -->
-        <div style="display:flex; gap:2px; flex-wrap:nowrap; justify-content:center; margin-bottom:20px;">
-            <section class="card center" style="width:460px; flex: none; min-width: 300px;">
+        <!-- UPDATED: Two document previews that now use the full width -->
+        <div class="previews-container">
+            <section class="preview-card center">
                 <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
 
                 <div class="tabs-wrapper">
@@ -562,7 +593,7 @@
                 </div>
             </section>
 
-            <section class="card center" style="width:460px; flex: none; min-width: 300px;">
+            <section class="preview-card center">
                 <h3 style="color:var(--light-blue); margin-bottom: 10px;">Преглед на документи</h3>
 
                 <div class="tabs-wrapper">
@@ -826,9 +857,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
