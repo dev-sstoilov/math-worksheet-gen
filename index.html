@@ -908,48 +908,9 @@
 
         });
     </script>
-    <!-- Add this at the end of <body>, after your existing scripts -->
-    <script type="text/javascript">
-        // Initialize Yandex.Metrica hidden counter
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=104815039', 'ym');
-    
-        // Initialize the counter but disable any UI
-        ym(104815039, 'init', {
-            clickmap:false,
-            trackLinks:false,
-            accurateTrackBounce:false,
-            webvisor:false,
-            defer:false
-        });
-    
-        const downloadBtn = document.getElementById('downloadBtn');
-    
-        if(downloadBtn){
-            downloadBtn.addEventListener('click', function(e){
-                e.preventDefault();
-    
-                // Send Yandex.Metrica event for download
-                ym(104815039, 'reachGoal', 'downloadClicked', {}, function(){
-                    console.log('Download button clicked. Event counted in Yandex.Metrica.');
-                });
-    
-                // Trigger actual file download
-                const link = document.createElement('a');
-                link.href = this.href;
-                link.download = '';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
-    </script>
 </body>
 </html>
+
 
 
 
