@@ -1,4 +1,3 @@
-#© 2025-2027 Math Problem Creation Program. All rights reserved.
 import sys
 import random
 import json
@@ -744,24 +743,39 @@ class MathWorksheetGenerator(QMainWindow):
             QMessageBox.warning(self, "Предупреждение", "Моля изберете поне една операция!")
             return []
 
+        # Validate that count is reasonable
+        if count <= 0:
+            QMessageBox.warning(self, "Предупреждение", "Броят уравнения трябва да е поне 1!")
+            return []
+
         problems = []
         used_combinations = set()
+    
+        # Safety counter to prevent infinite loops
+        max_attempts = count * 100
+        attempts = 0
 
-        while len(problems) < count:
+        while len(problems) < count and attempts < max_attempts:
+            attempts += 1
             op = random.choice(operations)
 
-            if op == "addition":
-                a, b, result = self.generate_addition()
-                op_symbol = "+" if self.number_format.isChecked() else "плюс"
-            elif op == "subtraction":
-                a, b, result = self.generate_subtraction()
-                op_symbol = "-" if self.number_format.isChecked() else "минус"
-            elif op == "multiplication":
-                a, b, result = self.generate_multiplication()
-                op_symbol = "×" if self.number_format.isChecked() else "умножено по"
-            else:  # division
-                a, b, result = self.generate_division()
-                op_symbol = "÷" if self.number_format.isChecked() else "делено на"
+            try:
+                if op == "addition":
+                    a, b, result = self.generate_addition()
+                    op_symbol = "+" if self.number_format.isChecked() else "плюс"
+                elif op == "subtraction":
+                    a, b, result = self.generate_subtraction()
+                    op_symbol = "-" if self.number_format.isChecked() else "минус"
+                elif op == "multiplication":
+                    a, b, result = self.generate_multiplication()
+                    op_symbol = "×" if self.number_format.isChecked() else "умножено по"
+                else:  # division
+                    a, b, result = self.generate_division()
+                    op_symbol = "÷" if self.number_format.isChecked() else "делено на"
+            except Exception as e:
+                # Log the error but continue trying
+                print(f"Error generating problem: {e}")
+                continue
 
             key = f"{op}-{a}-{b}"
             if key in used_combinations:
@@ -776,6 +790,9 @@ class MathWorksheetGenerator(QMainWindow):
                 "answer": f"{display_a} {op_symbol} {display_b} = {result}"
             }
             problems.append(problem)
+
+        if len(problems) < count:
+            self.statusBar().showMessage(f"Генерирани са само {len(problems)} от {count} уравнения (ограничени опции)", 5000)
 
         return problems[:count]
 
@@ -803,49 +820,52 @@ class MathWorksheetGenerator(QMainWindow):
             for page_start in range(0, len(problems), per_page):
                 page_chunk = problems[page_start:page_start + per_page]
 
-                table = doc.add_table(rows=0, cols=cols)
-                table.autofit = False
-
-                col_width = Inches(1.25)
+                # Calculate how many rows we need
+                rows_needed = math.ceil(len(page_chunk) / cols)
+                table = doc.add_table(rows=rows_needed, cols=cols)
+            
+                # Set column widths - do this after table is created but before populating
                 for col in table.columns:
-                    try:
-                        col.width = col_width
-                    except Exception:
-                        pass
+                    col.width = Inches(1.25)
 
                 # remove borders for a cleaner look (keeps same behavior)
-                tbl = table._tbl
-                tblPr = tbl.tblPr
-                tblBorders = parse_xml(
-                    r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-                    r'<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
-                    r'</w:tblBorders>'
-                )
-                tblPr.append(tblBorders)
+                try:
+                    tbl = table._tbl
+                    tblPr = tbl.tblPr
+                    tblBorders = parse_xml(
+                        r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                        r'<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+                        r'</w:tblBorders>'
+                    )
+                    tblPr.append(tblBorders)
+                except Exception:
+                    # If XML parsing fails, continue without custom borders
+                    pass
 
+                # Populate the table
                 for i, problem in enumerate(page_chunk):
-                    if i % cols == 0:
-                        row = table.add_row()
-                        row.height = Inches(0.5)
+                    row_idx = i // cols
+                    col_idx = i % cols
+                
+                    if row_idx < rows_needed and col_idx < cols:
+                        cell = table.cell(row_idx, col_idx)
+                        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                    
+                        # create left-aligned paragraph
+                        p = cell.add_paragraph(problem)
+                        p.paragraph_format.space_after = Pt(0)
+                        p.paragraph_format.space_before = Pt(0)
+                        p.paragraph_format.line_spacing = 1
+                        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-                    cell = row.cells[i % cols]
-                    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-
-                    # create left-aligned paragraph
-                    p = cell.add_paragraph(problem)
-                    p.paragraph_format.space_after = Pt(0)
-                    p.paragraph_format.space_before = Pt(0)
-                    p.paragraph_format.line_spacing = 1
-                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-                    for run in p.runs:
-                        run.font.size = Pt(14)
-                        run.font.name = 'Arial'
+                        for run in p.runs:
+                            run.font.size = Pt(14)
+                            run.font.name = 'Arial'
 
                 # insert a page break after each page chunk except the last
                 if page_start + per_page < len(problems):
