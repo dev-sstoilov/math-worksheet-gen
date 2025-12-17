@@ -720,18 +720,20 @@
             <button id="okBtn" style="margin-top:16px; padding:10px 25px; background: linear-gradient(to right, var(--primary-blue), var(--dark-blue)); color: var(--white); border:none; border-radius: 8px; font-size:1rem; cursor:pointer; box-shadow: var(--shadow);">OK</button>
         </div>
     </div>
-
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-        // fallback data-uri svg
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Device / OS detection ---
+        const isWindows = navigator.userAgent.indexOf("Windows NT") !== -1;
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod|Tablet/i.test(navigator.userAgent);
+    
+        // fallback data-uri svg for images
         var fallback = 'data:image/svg+xml;utf8,' + encodeURIComponent(
             '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
             '<rect fill="#fff" width="100%" height="100%"/>' +
             '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#888" font-family="Segoe UI, Arial" font-size="20">Изображение не е налично</text>' +
             '</svg>'
         );
-
-        // global error handler for imgs (covers dynamically assigned src as well)
+    
         function attachFallback(imgElement) {
             if (!imgElement) return;
             imgElement.onerror = function () {
@@ -740,110 +742,124 @@
                 this.src = fallback;
             };
         }
-
+    
         // ---------- Modal ----------
         const modal = document.getElementById('downloadModal');
         const downloadBtn = document.getElementById('downloadBtn');
         const closeModal = document.getElementById('closeModal');
         const okBtn = document.getElementById('okBtn');
-
-        if (downloadBtn && modal) {
-        downloadBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        modal.style.display = 'flex';
-
-        // Track download button click
-        posthog.capture('download_button_clicked', {
-            button_id: 'downloadBtn',
-            button_text: 'Изтегли програмата',
-            download_url: this.href
-        });
-
-        // trigger download
-        const downloadLink = document.createElement('a');
-        downloadLink.href = this.href;
-        downloadLink.download = '';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        });
+    
+        if (!isWindows || isMobile) {
+            // Incompatible device: disable download and show modal
+            if (downloadBtn) {
+                downloadBtn.style.pointerEvents = 'none';
+                downloadBtn.style.opacity = '0.5';
+            }
+    
+            if (modal) {
+                modal.style.display = 'flex';
+                const modalText = modal.querySelector('.modal-text');
+                if (modalText) {
+                    modalText.innerHTML = 'Текущото устройство или операционна система не е съвместимо. Програмата поддържа само Windows 10 и Windows 11 на настолни компютри.';
+                }
+                if (okBtn) okBtn.style.display = 'none';
+            }
+        } else {
+            // Windows desktop: enable download functionality
+            if (downloadBtn && modal) {
+                downloadBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    modal.style.display = 'flex';
+    
+                    // Track download button click
+                    posthog.capture('download_button_clicked', {
+                        button_id: 'downloadBtn',
+                        button_text: 'Изтегли програмата',
+                        download_url: this.href
+                    });
+    
+                    // trigger download
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = this.href;
+                    downloadLink.download = '';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                });
+            }
         }
-
+    
         // Track author button click
         const authorBtn = document.querySelector('.author-btn');
         if (authorBtn) {
-            authorBtn.addEventListener('click', function (e) {
+            authorBtn.addEventListener('click', function () {
                 posthog.capture('author_button_clicked', {
                     button_id: 'authorBtn',
                     button_text: 'За автора',
                     author_url: this.href
                 });
-                // Let the link proceed normally
             });
         }
-
+    
         function hideModal() { if (modal) modal.style.display = 'none'; }
         if (closeModal) closeModal.addEventListener('click', hideModal);
         if (okBtn) okBtn.addEventListener('click', hideModal);
         window.addEventListener('click', function (ev) { if (ev.target === modal) hideModal(); });
-
-        // ---------- Slideshow (buttons + dots, no keyboard) ----------
+    
+        // ---------- Slideshow ----------
         const slides = [
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture1.png?raw=true",
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture2.png?raw=true",
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture3.png?raw=true",
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture4.png?raw=true",
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture5.png?raw=true",
-        "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture6.png?raw=true"
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture1.png?raw=true",
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture2.png?raw=true",
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture3.png?raw=true",
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture4.png?raw=true",
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture5.png?raw=true",
+            "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Picture6.png?raw=true"
         ];
-
+    
         let current = 0;
         const imgEl = document.getElementById('slideImg');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const dotsContainer = document.getElementById('dotsContainer');
-
+    
         if (imgEl && prevBtn && nextBtn && dotsContainer) {
-        // build dots
-        slides.forEach((src, i) => {
-        const dot = document.createElement('div');
-        dot.className = 'control-dot' + (i === 0 ? ' active' : '');
-        dot.title = 'Стъпка ' + (i + 1);
-        dot.addEventListener('click', () => show(i));
-        dotsContainer.appendChild(dot);
-        });
-
-        function show(index) {
-        if (index < 0) index = slides.length - 1;
-        if (index >= slides.length) index = 0;
-        current = index;
-        imgEl.src = slides[current];
-        updateDots();
+            slides.forEach((src, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'control-dot' + (i === 0 ? ' active' : '');
+                dot.title = 'Стъпка ' + (i + 1);
+                dot.addEventListener('click', () => show(i));
+                dotsContainer.appendChild(dot);
+            });
+    
+            function show(index) {
+                if (index < 0) index = slides.length - 1;
+                if (index >= slides.length) index = 0;
+                current = index;
+                imgEl.src = slides[current];
+                updateDots();
+            }
+    
+            function updateDots() {
+                const dots = dotsContainer.querySelectorAll('.control-dot');
+                dots.forEach((d, i) => d.classList.toggle('active', i === current));
+            }
+    
+            prevBtn.addEventListener('click', () => show(current - 1));
+            nextBtn.addEventListener('click', () => show(current + 1));
+    
+            attachFallback(imgEl);
+    
+            slides.forEach(s => {
+                const i = new Image();
+                i.onload = function() { };
+                i.onerror = function() { this.src = fallback; };
+                i.src = s;
+            });
+    
+            show(0);
         }
-
-        function updateDots() {
-        const dots = dotsContainer.querySelectorAll('.control-dot');
-        dots.forEach((d, i) => d.classList.toggle('active', i === current));
-        }
-
-        prevBtn.addEventListener('click', () => show(current - 1));
-        nextBtn.addEventListener('click', () => show(current + 1));
-
-        // attach fallback for slideshow main image
-        attachFallback(imgEl);
-
-        // preload slides (with error -> fallback)
-        slides.forEach(s => {
-            const i = new Image();
-            i.onload = function() { /* loaded */ };
-            i.onerror = function() { this.src = fallback; };
-            i.src = s;
-        });
-
-        show(0);
-        }
-
-        // ---------- Tabs for two independent previews ----------
+    
+        // ---------- Tabs for document previews ----------
         const previewConfigs = [
             {
                 tabWorksheetId: 'tabWorksheet1',
@@ -851,7 +867,7 @@
                 imgId: 'screenshotImg1',
                 urls: {
                     worksheet: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20175016.png?raw=true",
-                    answers:   "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/answers.png?raw=true"
+                    answers: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/answers.png?raw=true"
                 }
             },
             {
@@ -859,22 +875,19 @@
                 tabAnswersId: 'tabAnswers2',
                 imgId: 'screenshotImg2',
                 urls: {
-                    // different default URLs so you can show different document types
                     worksheet: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20214640.png?raw=true",
-                    answers:   "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20214702.png?raw=true"
+                    answers: "https://github.com/dev-sstoilov/math-worksheet-gen/blob/main/Screenshot%202025-09-28%20214702.png?raw=true"
                 }
             }
         ];
-
-        // Build preload list
+    
         var preloadList = [];
         previewConfigs.forEach(cfg => {
             preloadList.push(cfg.urls.worksheet, cfg.urls.answers);
         });
         slides.forEach(s => preloadList.push(s));
-
-        // Preload all and record which URLs succeeded
-        var preloadResults = {}; // url -> true/false
+    
+        var preloadResults = {};
         var preloadPromises = preloadList.filter(Boolean).map(function(u) {
             return new Promise(function(resolve) {
                 var i = new Image();
@@ -883,58 +896,52 @@
                 i.src = u;
             });
         });
-
+    
         Promise.all(preloadPromises).then(function() {
-            // attach fallback handlers to the preview images
             previewConfigs.forEach(function(cfg) {
                 var img = document.getElementById(cfg.imgId);
                 attachFallback(img);
-            });
-
-            // initialize each preview with the first available (worksheet preferred)
-            previewConfigs.forEach(function(cfg) {
+    
+                if (!img) return;
                 var tabW = document.getElementById(cfg.tabWorksheetId);
                 var tabA = document.getElementById(cfg.tabAnswersId);
-                var imgEl = document.getElementById(cfg.imgId);
-                if (!tabW || !tabA || !imgEl) return;
-
+                if (!tabW || !tabA) return;
+    
                 function chooseSrc(preferredUrl) {
-                    // return preferred if loaded, else fallback
                     return (preloadResults[preferredUrl] === true) ? preferredUrl : fallback;
                 }
-
+    
                 function setActive(name) {
                     if (name === 'worksheet') {
                         tabW.classList.add('active');
                         tabA.classList.remove('active');
                         tabW.setAttribute('aria-selected', 'true');
                         tabA.setAttribute('aria-selected', 'false');
-                        imgEl.src = chooseSrc(cfg.urls.worksheet);
-                        imgEl.alt = 'Преглед на работен лист';
+                        img.src = chooseSrc(cfg.urls.worksheet);
+                        img.alt = 'Преглед на работен лист';
                     } else {
                         tabW.classList.remove('active');
                         tabA.classList.add('active');
                         tabW.setAttribute('aria-selected', 'false');
                         tabA.setAttribute('aria-selected', 'true');
-                        imgEl.src = chooseSrc(cfg.urls.answers);
-                        imgEl.alt = 'Преглед на отговори';
+                        img.src = chooseSrc(cfg.urls.answers);
+                        img.alt = 'Преглед на отговори';
                     }
                 }
-
-                tabW.addEventListener('click', function() { setActive('worksheet'); });
-                tabA.addEventListener('click', function() { setActive('answers'); });
+    
+                tabW.addEventListener('click', () => setActive('worksheet'));
+                tabA.addEventListener('click', () => setActive('answers'));
                 setActive('worksheet');
             });
         }).catch(function() {
-            // fallback: attach handlers and set placeholders immediately
             previewConfigs.forEach(function(cfg) {
                 var imgEl = document.getElementById(cfg.imgId);
                 attachFallback(imgEl);
                 if (imgEl) imgEl.src = fallback;
             });
         });
-
-        });
+    });
     </script>
 </body>
 </html>
+
