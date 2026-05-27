@@ -287,10 +287,10 @@ class MathWorksheetGenerator(QMainWindow):
         mul_op1_group = QGroupBox("Първо число")
         mul_op1_layout = QHBoxLayout(mul_op1_group)
         self.mul_op1_min = QSpinBox()
-        self.mul_op1_min.setRange(1, 100)
+        self.mul_op1_min.setRange(0, 100)
         self.mul_op1_min.setValue(1)
         self.mul_op1_max = QSpinBox()
-        self.mul_op1_max.setRange(1, 100)
+        self.mul_op1_max.setRange(0, 100)
         self.mul_op1_max.setValue(12)
         mul_op1_layout.addWidget(QLabel("От:"))
         mul_op1_layout.addWidget(self.mul_op1_min)
@@ -301,10 +301,10 @@ class MathWorksheetGenerator(QMainWindow):
         mul_op2_group = QGroupBox("Второ число")
         mul_op2_layout = QHBoxLayout(mul_op2_group)
         self.mul_op2_min = QSpinBox()
-        self.mul_op2_min.setRange(1, 100)
+        self.mul_op2_min.setRange(0, 100)
         self.mul_op2_min.setValue(1)
         self.mul_op2_max = QSpinBox()
-        self.mul_op2_max.setRange(1, 100)
+        self.mul_op2_max.setRange(0, 100)
         self.mul_op2_max.setValue(12)
         mul_op2_layout.addWidget(QLabel("От:"))
         mul_op2_layout.addWidget(self.mul_op2_min)
@@ -328,7 +328,7 @@ class MathWorksheetGenerator(QMainWindow):
         div_op1_group = QGroupBox("Първо число")
         div_op1_layout = QHBoxLayout(div_op1_group)
         self.div_op1_min = QSpinBox()
-        self.div_op1_min.setRange(1, 1000)
+        self.div_op1_min.setRange(0, 1000)
         self.div_op1_min.setValue(1)
         self.div_op1_max = QSpinBox()
         self.div_op1_max.setRange(1, 1000)
@@ -342,10 +342,10 @@ class MathWorksheetGenerator(QMainWindow):
         div_op2_group = QGroupBox("Второ число")
         div_op2_layout = QHBoxLayout(div_op2_group)
         self.div_op2_min = QSpinBox()
-        self.div_op2_min.setRange(1, 100)
+        self.div_op2_min.setRange(0, 100)
         self.div_op2_min.setValue(1)
         self.div_op2_max = QSpinBox()
-        self.div_op2_max.setRange(1, 100)
+        self.div_op2_max.setRange(0, 100)
         self.div_op2_max.setValue(12)
         div_op2_layout.addWidget(QLabel("От:"))
         div_op2_layout.addWidget(self.div_op2_min)
@@ -357,6 +357,10 @@ class MathWorksheetGenerator(QMainWindow):
         self.div_allow_decimal = QCheckBox("Разрешени десетични числа")
         self.div_allow_decimal.setChecked(True)
         division_settings_layout.addWidget(self.div_allow_decimal)
+
+        self.div_quotient_above_ten = QCheckBox("Частното може да е над десет")
+        self.div_quotient_above_ten.setChecked(False)
+        division_settings_layout.addWidget(self.div_quotient_above_ten)
 
         division_layout.addWidget(division_settings)
 
@@ -482,7 +486,8 @@ class MathWorksheetGenerator(QMainWindow):
                 "op1_max": self.div_op1_max.value(),
                 "op2_min": self.div_op2_min.value(),
                 "op2_max": self.div_op2_max.value(),
-                "allow_decimal": bool(self.div_allow_decimal.isChecked())
+                "allow_decimal": bool(self.div_allow_decimal.isChecked()),
+                "quotient_above_ten": bool(self.div_quotient_above_ten.isChecked())
             }
         }
 
@@ -561,6 +566,7 @@ class MathWorksheetGenerator(QMainWindow):
         self.div_op2_min.setValue(div_settings.get("op2_min", 1))
         self.div_op2_max.setValue(div_settings.get("op2_max", 12))
         self.div_allow_decimal.setChecked(div_settings.get("allow_decimal", True))
+        self.div_quotient_above_ten.setChecked(div_settings.get("quotient_above_ten", False))
 
     # -------------------------
     # Number to Bulgarian (unchanged for integers; floats return numeric string)
@@ -693,33 +699,53 @@ class MathWorksheetGenerator(QMainWindow):
         max2 = self.div_op2_max.value()
 
         allow_decimal = bool(self.div_allow_decimal.isChecked())
+        quotient_above_ten = bool(self.div_quotient_above_ten.isChecked())
 
         # If decimals allowed, produce operands and quotient with one decimal place
         if allow_decimal:
-            b_raw = random.randint(min2 * 10, max2 * 10)
-            b = b_raw / 10.0
-            min_q = max(0.1, min1 / b)
-            max_q = max(0.1, max1 / b)
-            if min_q > max_q:
-                min_q, max_q = max_q, min_q
-            q_raw = random.randint(int(math.floor(min_q * 10)), max(1, int(math.floor(max_q * 10))))
-            quotient = q_raw / 10.0
-            a = round(quotient * b, 1)
-            result = quotient
-            if a < min1 or a > max1:
+            for _ in range(100):
+                b_raw = random.randint(min2 * 10, max2 * 10)
+                b = b_raw / 10.0
+                if b == 0:
+                    continue
+
+                min_q = max(0.1, min1 / b)
+                max_q = max(0.1, max1 / b)
+                if not quotient_above_ten:
+                    max_q = min(max_q, 10.0)
+
+                min_q_raw = max(1, int(math.ceil(min_q * 10)))
+                max_q_raw = max(1, int(math.floor(max_q * 10)))
+                if min_q_raw > max_q_raw:
+                    continue
+
+                q_raw = random.randint(min_q_raw, max_q_raw)
+                quotient = q_raw / 10.0
+                a = round(quotient * b, 1)
+                result = quotient
+                break
+            else:
                 allow_decimal = False
 
         if not allow_decimal:
-            b = random.randint(min2, max2)
-            min_quotient = max(1, min1 // b)
-            max_quotient = max1 // b
+            for _ in range(100):
+                b = random.randint(min2, max2)
+                if b == 0:
+                    continue
 
-            if min_quotient > max_quotient:
-                min_quotient, max_quotient = max_quotient, min_quotient
+                min_quotient = max(1, int(math.ceil(min1 / b)))
+                max_quotient = max1 // b
+                if not quotient_above_ten:
+                    max_quotient = min(max_quotient, 10)
+                if min_quotient > max_quotient:
+                    continue
 
-            quotient = random.randint(min_quotient, max_quotient)
-            a = quotient * b
-            result = quotient
+                quotient = random.randint(min_quotient, max_quotient)
+                a = quotient * b
+                result = quotient
+                break
+            else:
+                return random.randint(min1, max1), 0, "X"
 
         return a, b, result
 
@@ -864,7 +890,7 @@ class MathWorksheetGenerator(QMainWindow):
                         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
                         for run in p.runs:
-                            run.font.size = Pt(14)
+                            run.font.size = Pt(12)
                             run.font.name = 'Arial'
 
                 # insert a page break after each page chunk except the last
@@ -879,7 +905,7 @@ class MathWorksheetGenerator(QMainWindow):
                 p.paragraph_format.line_spacing = 1.5
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 for run in p.runs:
-                    run.font.size = Pt(14)
+                    run.font.size = Pt(12)
                     run.font.name = 'Arial'
 
         return doc
@@ -945,6 +971,7 @@ class MathWorksheetGenerator(QMainWindow):
         <p><strong>Брой уравнения:</strong> Въведете желания брой задачи (от 1 до 1000)</p>
         <p><strong>Операции:</strong> Поставете/махнете отметката на съответната таб-бутона, за да включите/изключите операцията при генериране. Табовете остават кликащи за настройка.</p>
         <p><strong>Деление (десетични):</strong> Новата опция "Разрешени десетични числа" позволява да се генерират примери при деление с дробни (напр. 1.2, 0.5) делители и/или частни (по избор). По подразбиране е включено.</p>
+        <p><strong>Деление (частно над десет):</strong> Опцията "Частното може да е над десет" позволява резултатът от делението да бъде по-голям от 10. Когато не е отметната, частното се ограничава до 10. По подразбиране не е отметната.</p>
         <p><strong>Диалог за запазване:</strong> Последната използвана директория за запис се запазва и ще бъде отворена по подразбиране при следващо записване.</p>
         """
         QMessageBox.information(self, "Помощ", help_text)
